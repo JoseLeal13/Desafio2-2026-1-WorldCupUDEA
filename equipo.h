@@ -2,46 +2,50 @@
 #define EQUIPO_H
 
 //#include "Jugador.h"
-#include <fstream> //CAMBIO: Necesario para leer archivos
+#include <string>
+#include <iostream>
 
 class Equipo {
 private:
-    // Datos del CSV
-    char* nombre;
-    char* directorTecnico; // CAMBIO: Añadido según el CSV
-    char* federacion;      // CAMBIO: Añadido según el CSV
-    char* confederacion;
+    // Datos usando C++ Strings (No char*)
+    std::string nombre;
+    std::string directorTecnico;
+    std::string federacion;
+    std::string confederacion;
     unsigned short int rankingFIFA;
 
-    // Estadísticas Históricas para la fórmula Lambda
     float promGolesFavorHistorico;
     float promGolesContraHistorico;
 
-    // Contenedor de jugadores
+    // Contenedor de jugadores (Memoria dinámica requerida por el core)
     Jugador** jugadores;
     unsigned short int cantidadJugadores;
 
-    // Estadísticas del torneo actual
     unsigned short int puntos;
     unsigned short int golesFavorTorneo;
     unsigned short int golesContraTorneo;
 
 public:
-    // CAMBIO: Constructor ajustado a los datos del archivo
-    Equipo(unsigned short int rank, const char* nom, const char* dt, const char* fed, const char* conf, float pgf, float pgc);
+    // Constructor con std::string
+    Equipo(unsigned short int rank, std::string nom, std::string dt, std::string fed, std::string conf, float pgf, float pgc);
     ~Equipo();
 
-    // Getters
-    float getPromGolesFavor() const { return promGolesFavorHistorico; }
-    const char* getNombre() const { return nombre; }
+    // Getters necesarios para Mundial y Grupos
+    std::string getNombre() const { return nombre; }
+    std::string getConfederacion() const { return confederacion; }
+    unsigned short int getRanking() const { return rankingFIFA; }
+    unsigned short int getPuntos() const { return puntos; }
+    unsigned short int getGolesFavorTorneo() const { return golesFavorTorneo; }
+    unsigned short int getGolesContraTorneo() const { return golesContraTorneo; }
 
-    // Función de selección
-    Jugador** obtenerTitulares(); // CAMBIO: Nombre unificado
+    // Para el reporte de Máximo Goleador
+    unsigned short int getCantidadJugadores() const { return cantidadJugadores; }
+    Jugador* getJugador(int indice) const { return jugadores[indice]; }
 
-    // Métodos de actualización
+    Jugador** obtenerTitulares();
     void agregarJugador(Jugador* j);
-    void actualizarResultado(int gf, int gc);
-    void mostrarDatos() const; // Para verificar la carga
+    void actualizarResultado(unsigned short int gf, unsigned short int gc);
+    void mostrarDatos() const;
 };
 
 #endif

@@ -65,27 +65,8 @@ void Equipo::agregarJugador(Jugador* j) {
     }
 }
 
-Jugador** Equipo::obtenerTitulares() {
-    if (cantidadJugadores == 0) return nullptr;
-
-    Jugador** titulares = new Jugador*[11];
-    bool seleccionados[26] = {false};
-    unsigned short int seleccionadosCont = 0;
-    unsigned short int limite = (cantidadJugadores < 11) ? cantidadJugadores : 11;
-
-    while (seleccionadosCont < limite) {
-        int indiceAleatorio = rand() % cantidadJugadores;
-        if (!seleccionados[indiceAleatorio]) {
-            titulares[seleccionadosCont] = jugadores[indiceAleatorio];
-            seleccionados[indiceAleatorio] = true;
-            seleccionadosCont++;
-        }
-    }
-    return titulares;
-}
-
 void Equipo::mostrarDatos() const {
-    cout << "Equipo: " << nombre << " | Ranking: " << rankingFIFA << " | Conf: " << confederacion << endl;
+    cout << "Equipo: " << nombre << " | Ranking: " << rankingFIFA << " | Confederación: " << confederacion << endl;
 }
 
 Equipo::~Equipo() {

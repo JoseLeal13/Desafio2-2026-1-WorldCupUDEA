@@ -4,7 +4,6 @@
 #include "lista.h"   //Clase lista genérica
 #include "grupos.h"
 #include "equipo.h"
-#include <string>
 
 class Mundial {
 private:

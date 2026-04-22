@@ -4,11 +4,11 @@
 #include <iostream>
 
 // 3.1 Estructura de datos: Clase Nodo genérica
+template <typename T>
 class Nodo {
 public:
-    T data;            // Campo de datos genérico [cite: 680, 684]
-    Nodo<T>* ptrNext;  // Apuntador al siguiente nodo [cite: 682, 685]
-
+    T data;
+    Nodo<T>* ptrNext;
     Nodo(T value) : data(value), ptrNext(nullptr) {}
 };
 
@@ -16,9 +16,9 @@ public:
 template <typename T>
 class lista {
 private:
-    Nodo<T>* head;      // Apuntador al primer elemento [cite: 698]
-    Nodo<T>* tail;      // Eficiencia: Apuntador al último elemento para O(1) [cite: 699, 708]
-    int _tamaño;        // Atributo para almacenar el tamaño actual [cite: 696]
+    Nodo<T>* head;      // Apuntador al primer elemento
+    Nodo<T>* tail;      // Eficiencia: Apuntador al último elemento para O(1)
+    int _tamaño;        // Atributo para almacenar el tamaño actual
 
     // Atributo estático para rastrear memoria ocupada
     static long memoriaTotal;
@@ -63,7 +63,7 @@ public:
         if (i < 0 || i > _tamaño) return;
 
         Nodo<T>* nuevo = new Nodo<T>(e);
-        totalMemory += sizeof(Nodo<T>); // Rastrear memoria del nuevo nodo
+        memoriaTotal += sizeof(Nodo<T>); // Rastrear memoria del nuevo nodo
 
         if (i == 0) { // Insertar al inicio
             nuevo->ptrNext = head;
@@ -78,7 +78,7 @@ public:
             nuevo->ptrNext = ant->ptrNext;
             ant->ptrNext = nuevo;
         }
-        _tamano++;
+        _tamaño++;
     }
 
     // eliminar(e): Elimina la primera aparición del elemento e
@@ -113,7 +113,7 @@ public:
         return actual->data;
     }
 
-    // reemplazar(e, i): Reemplaza el elemento en la posición i [cite: 704]
+    // reemplazar(e, i): Reemplaza el elemento en la posición i
     void reemplazar(T e, int i) {
         if (i < 0 || i >= _tamaño) return;
         Nodo<T>* actual = head;
@@ -128,7 +128,7 @@ public:
 
     // ■ concatenar(B): Concatena la lista B al final
     void concatenar(const lista<T>& B) {
-        for (int i = 0; i < B.tamano(); i++) {
+        for (int i = 0; i < B.tamaño(); i++) {
             this->agregar(B.consultar(i), _tamaño);
         }
     }
