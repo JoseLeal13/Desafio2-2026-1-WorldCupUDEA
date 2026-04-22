@@ -5,7 +5,9 @@ CONFIG -= qt
 
 SOURCES += \
         equipo.cpp \
+        grupos.cpp \
         main.cpp
 
 HEADERS += \
-    equipo.h
+    equipo.h \
+    grupos.h
