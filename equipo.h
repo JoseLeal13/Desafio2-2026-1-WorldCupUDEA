@@ -28,7 +28,7 @@ private:
 
 public:
     // CAMBIO: Constructor ajustado a los datos del archivo
-    Equipo(int rank, const char* nom, const char* dt, const char* fed, const char* conf, float pgf, float pgc);
+    Equipo(unsigned short int rank, const char* nom, const char* dt, const char* fed, const char* conf, float pgf, float pgc);
     ~Equipo();
 
     // Getters

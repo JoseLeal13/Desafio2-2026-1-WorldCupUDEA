@@ -66,20 +66,12 @@ Jugador** Equipo::obtenerTitulares() {
     return titulares;
 }
     // NOTA PARA SUSTENTACIÓN: Partido debe hacer delete[] a este retorno.
-}
 
 void Equipo::agregarJugador(Jugador* j) {
     if (cantidadJugadores < 26) {
         jugadores[cantidadJugadores] = j;
         cantidadJugadores++;
     }
-}
-
-void Equipo::actualizarResultado(int gf, int gc) {
-    golesFavorTorneo += gf;
-    golesContraTorneo += gc;
-    if (gf > gc) puntos += 3;
-    else if (gf == gc) puntos += 1;
 }
 
 void Equipo::mostrarDatos() const {
