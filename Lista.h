@@ -40,7 +40,7 @@ public:
     }
 
     // tamaño(): Devuelve el tamaño de la lista
-    int tamano() const { return _tamaño; }
+    int tamaño() const { return _tamaño; }
 
     // esVacia(): Verifica si la lista está vacía
     bool esVacia() const { return head == nullptr; }

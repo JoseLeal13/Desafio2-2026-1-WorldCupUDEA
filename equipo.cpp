@@ -6,31 +6,22 @@
 using namespace std;
 
 // CAMBIO: Constructor con nombres de parámetros claros y asignación correcta
-Equipo::Equipo(unsigned short int rank, const char* nom, const char* dt, const char* fed, const char* conf, float pgf, float pgc) {
-
-    rankingFIFA = rank; // Coincidencia exacta de tipo
-
-    nombre = new char[strlen(nom) + 1];
-    strcpy(nombre, nom);
-
-    directorTecnico = new char[strlen(dt) + 1];
-    strcpy(directorTecnico, dt);
-
-    federacion = new char[strlen(fed) + 1];
-    strcpy(federacion, fed);
-
-    confederacion = new char[strlen(conf) + 1];
-    strcpy(confederacion, conf);
+Equipo::Equipo(unsigned short int rank, string nom, string dt, string fed, string conf, float pgf, float pgc) {
+    rankingFIFA = rank;
+    nombre = nom;
+    directorTecnico = dt;
+    federacion = fed;
+    confederacion = conf;
 
     promGolesFavorHistorico = pgf;
     promGolesContraHistorico = pgc;
 
-    // Inicialización explícita
     puntos = 0;
     golesFavorTorneo = 0;
     golesContraTorneo = 0;
     cantidadJugadores = 0;
 
+    // El arreglo de punteros sigue siendo memoria dinámica (Requisito del core)
     jugadores = new Jugador*[26];
     for(int i = 0; i < 26; i++) jugadores[i] = nullptr;
 }
@@ -74,15 +65,30 @@ void Equipo::agregarJugador(Jugador* j) {
     }
 }
 
+Jugador** Equipo::obtenerTitulares() {
+    if (cantidadJugadores == 0) return nullptr;
+
+    Jugador** titulares = new Jugador*[11];
+    bool seleccionados[26] = {false};
+    unsigned short int seleccionadosCont = 0;
+    unsigned short int limite = (cantidadJugadores < 11) ? cantidadJugadores : 11;
+
+    while (seleccionadosCont < limite) {
+        int indiceAleatorio = rand() % cantidadJugadores;
+        if (!seleccionados[indiceAleatorio]) {
+            titulares[seleccionadosCont] = jugadores[indiceAleatorio];
+            seleccionados[indiceAleatorio] = true;
+            seleccionadosCont++;
+        }
+    }
+    return titulares;
+}
+
 void Equipo::mostrarDatos() const {
     cout << "Equipo: " << nombre << " | Ranking: " << rankingFIFA << " | Conf: " << confederacion << endl;
 }
 
 Equipo::~Equipo() {
-    delete[] nombre;
-    delete[] directorTecnico;
-    delete[] federacion;
-    delete[] confederacion;
 
     for(int i = 0; i < cantidadJugadores; i++) {
         if(jugadores[i] != nullptr) {

@@ -90,6 +90,32 @@ void Grupo::mostrarTabla() const {
     }
 }
 
+bool Grupo::esValidoAgregar(Equipo* nuevo) {
+    int mismoContinente = 0;
+    int conteoUEFA = 0;
+
+    for (int i = 0; i < cantEquipos; i++) {
+        if (equipos[i]->getConfederacion() == nuevo->getConfederacion()) {
+            mismoContinente++;
+        }
+        if (equipos[i]->getConfederacion() == "UEFA") {
+            conteoUEFA++;
+        }
+    }
+
+    // Regla 1: No puede haber 2 de la misma confederación (excepto UEFA)
+    if (nuevo->getConfederacion() != "UEFA" && mismoContinente > 0) {
+        return false;
+    }
+
+    // Regla 2: Máximo 2 de la UEFA por grupo
+    if (nuevo->getConfederacion() == "UEFA" && conteoUEFA >= 2) {
+        return false;
+    }
+
+    return true;
+}
+
 Grupo::~Grupo() {
     // IMPORTANTE: Solo borramos el arreglo de punteros, NO los equipos.
     // Los equipos "viven" en el Mundial, el grupo solo los referencia.

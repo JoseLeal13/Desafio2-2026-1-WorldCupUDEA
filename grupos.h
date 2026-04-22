@@ -21,6 +21,8 @@ public:
     // Retorna los equipos que pasan (1ro, 2do y quizás 3ro según el torneo)
     Equipo** obtenerClasificados(unsigned short int &cuantos);
 
+    bool esValidoAgregar(Equipo* nuevo);
+
     char getId() const { return idGrupo; }
     void mostrarTabla() const;
 };
