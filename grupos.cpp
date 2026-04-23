@@ -116,6 +116,13 @@ bool Grupo::esValidoAgregar(Equipo* nuevo) {
     return true;
 }
 
+Equipo* Grupo::consultarPorPosicion(unsigned short int indice) {
+    if (indice >= 0 && indice < cantEquipos) {
+        return equipos[indice];
+    }
+    return nullptr;
+}
+
 Grupo::~Grupo() {
     // IMPORTANTE: Solo borramos el arreglo de punteros, NO los equipos.
     // Los equipos "viven" en el Mundial, el grupo solo los referencia.

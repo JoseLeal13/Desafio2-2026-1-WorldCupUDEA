@@ -16,6 +16,11 @@ Equipo::Equipo(unsigned short int rank, string nom, string dt, string fed, strin
     promGolesFavorHistorico = pgf;
     promGolesContraHistorico = pgc;
 
+    partidosJugados = 0;
+    partidosGanados = 0;
+    partidosEmpatados = 0;
+    partidosPerdidos = 0;
+
     puntos = 0;
     golesFavorTorneo = 0;
     golesContraTorneo = 0;
@@ -30,12 +35,22 @@ Equipo::Equipo(unsigned short int rank, string nom, string dt, string fed, strin
 void Equipo::actualizarResultado(unsigned short int gf, unsigned short int gc) {
     golesFavorTorneo += gf;
     golesContraTorneo += gc;
+    partidosJugados++; // Nuevo atributo necesario
 
     if (gf > gc) {
         puntos += 3;
+        partidosGanados++;
     } else if (gf == gc) {
         puntos += 1;
+        partidosEmpatados++;
+    } else {
+        partidosPerdidos++;
     }
+
+    // REGLA DE ORO: Actualizar también los promedios históricos
+    // para que la simulación evolucione durante el torneo.
+    promGolesFavorHistorico = (promGolesFavorHistorico + gf) / 2.0;
+    promGolesContraHistorico = (promGolesContraHistorico + gc) / 2.0;
 }
 
 // CAMBIO 3: La variable 'limite' y los índices deben ser coherentes

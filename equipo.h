@@ -1,7 +1,7 @@
 #ifndef EQUIPO_H
 #define EQUIPO_H
 
-//#include "Jugador.h"
+#include "jugador.h"
 #include <string>
 #include <iostream>
 
@@ -24,6 +24,11 @@ private:
     unsigned short int puntos;
     unsigned short int golesFavorTorneo;
     unsigned short int golesContraTorneo;
+
+    unsigned short int partidosJugados;
+    unsigned short int partidosGanados;
+    unsigned short int partidosEmpatados;
+    unsigned short int partidosPerdidos;
 
 public:
     // Constructor con std::string

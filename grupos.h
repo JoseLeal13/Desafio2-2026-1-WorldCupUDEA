@@ -23,6 +23,8 @@ public:
 
     bool esValidoAgregar(Equipo* nuevo);
 
+    Equipo* consultarPorPosicion(unsigned short int indice);
+
     char getId() const { return idGrupo; }
     void mostrarTabla() const;
 };
