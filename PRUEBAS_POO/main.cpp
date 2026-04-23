@@ -276,9 +276,9 @@ private:
     seleccion** lista_selecciones;
     int cantidad_selecciones;
 
-    p
 
-            ublic:
+
+    public:
         mundial() {
         lista_selecciones = new seleccion*[MAXIMO_SELECCIONES];
         for (int i = 0; i < MAXIMO_SELECCIONES; i++) lista_selecciones[i] = nullptr;
@@ -368,8 +368,8 @@ int main() {
     mundial copa_del_mundo;
 
     // IMPORTANTE: cambia esta ruta por donde tengas el CSV en tu PC
-    copa_del_mundo.cargar_desde_archivo("selecciones_clasificadas_mundial.csv");
-
+    copa_del_mundo.cargar_desde_archivo("C:\\Users\\Emmanuel\\Documents\\PRUEBAS_POO\\selecciones_clasificadas_mundial.csv");
+//copa_del_mundo.cargar_desde_archivo("C:\\Users\\Emmanuel\\Documents\\PRUEBAS_POO\\archivo.csv");
     // Si da 0 aquí es porque la ruta está mal o el archivo tiene otro formato
     cout << "Selecciones cargadas: " << copa_del_mundo.get_cantidad_selecciones() << "\n";
 
