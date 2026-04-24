@@ -63,48 +63,63 @@ void Mundial::prepararBombosYSorteo() {
     // 1. Crear las 4 listas para los bombos (Poder sembrar los equipos por nivel)
     lista<Equipo*> bombo1, bombo2, bombo3, bombo4;
 
-    // 2. Llenar los bombos basándonos en la listaMaestra (que ya debería estar ordenada por ranking)
     for (int i = 0; i < listaMaestra.tamaño(); i++) {
         Equipo* e = listaMaestra.consultar(i);
-        if (i < 12) bombo1.agregar(e, bombo1.tamaño());
-        else if (i < 24) bombo2.agregar(e, bombo2.tamaño());
-        else if (i < 36) bombo3.agregar(e, bombo3.tamaño());
+
+        // REQUERIMIENTO (a): EE.UU. es anfitrión y va al Grupo A directamente
+        if (e->getNombre() == "Estados Unidos" || e->getNombre() == "USA") {
+            grupos[0]->agregarEquipo(e); // grupos[0] es el Grupo A
+            continue; // No lo agregamos a ningún bombo
+        }
+
+        // Llenar bombos (ajustando que ahora hay 47 equipos en los bombos)
+        if (bombo1.tamaño() < 11) bombo1.agregar(e, bombo1.tamaño()); // 11 porque USA ya salió
+        else if (bombo2.tamaño() < 12) bombo2.agregar(e, bombo2.tamaño());
+        else if (bombo3.tamaño() < 12) bombo3.agregar(e, bombo3.tamaño());
         else bombo4.agregar(e, bombo4.tamaño());
-    }
 
     // Array de punteros a nuestras listas de bombos para iterar
-    lista<Equipo*>* bombos[] = {&bombo1, &bombo2, &bombo3, &bombo4};
+        lista<Equipo*>* bombos[] = {&bombo1, &bombo2, &bombo3, &bombo4};
 
-    srand(time(0));
+        //   srand(time(0));
 
-    // 3. Proceso de Sorteo: Por cada Bombo (1 al 4)
-    for (int b = 0; b < 4; b++) {
-        // Por cada Grupo (A al L)
-        for (int g = 0; g < totalGrupos; g++) {
-            bool asignado = false;
-            int intentos = 0;
+        // 3. Proceso de Sorteo: Por cada Bombo (1 al 4)
+        for (int b = 0; b < 4; b++) {
+            // Por cada Grupo (A al L)
+            for (int g = 0; g < totalGrupos; g++) {
+                bool asignado = false;
+                int intentos = 0;
 
-            while (!asignado && !bombos[b]->esVacia()) {
-                int tam = bombos[b]->tamaño();
-                int posAleatoria = rand() % tam;
-                Equipo* candidato = bombos[b]->consultar(posAleatoria);
+                while (!asignado && !bombos[b]->esVacia()) {
+                    int tam = bombos[b]->tamaño();
+                    int posAleatoria = rand() % tam;
+                    Equipo* candidato = bombos[b]->consultar(posAleatoria);
 
-                // Verificamos restricciones geográficas (Tu método en grupos.cpp)
-                if (grupos[g]->esValidoAgregar(candidato)) {
-                    grupos[g]->agregarEquipo(candidato);
-                    bombos[b]->eliminar(candidato); // Lo sacamos del bombo para que no repita
-                    asignado = true;
-                } else {
-                    intentos++;
-                    // "Seguro" para evitar bucles infinitos en sorteos geográficamente imposibles
-                    if (intentos > 100) {
+                    // Verificamos restricciones geográficas (Tu método en grupos.cpp)
+                    if (grupos[g]->esValidoAgregar(candidato)) {
                         grupos[g]->agregarEquipo(candidato);
-                        bombos[b]->eliminar(candidato);
+                        bombos[b]->eliminar(candidato); // Lo sacamos del bombo para que no repita
                         asignado = true;
+                    } else {
+                        intentos++;
+                        // "Seguro" para evitar bucles infinitos en sorteos geográficamente imposibles
+                        if (intentos > 100) {
+                            grupos[g]->agregarEquipo(candidato);
+                            bombos[b]->eliminar(candidato);
+                            asignado = true;
+                        }
                     }
                 }
             }
         }
+    }
+}
+
+void Mundial::ejecutarFaseGrupos() {
+    for (int i = 0; i < totalGrupos; i++) {
+        cout << "\n--- Partidos Grupo " << char('A' + i) << " ---" << endl;
+        grupos[i]->simularPartidosDelGrupo();
+        grupos[i]->mostrarTabla();
     }
 }
 
@@ -212,6 +227,10 @@ void Mundial::avanzarAFaseEliminatoria() {
     // 3. Instanciamos la clase
     // Pasamos los 3 arreglos dinámicos al constructor de Fases
     faseFinal = new Fases(primeros, segundos, mejoresTerceros);
+
+    delete[] primeros;
+    delete[] segundos;
+    delete[] mejoresTerceros;
 
     cout << "\n------------------------------------------------" << endl;
     cout << " FASE DE GRUPOS FINALIZADA " << endl;

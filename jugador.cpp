@@ -20,7 +20,7 @@ void Jugador::copiar_texto(char* destino, const char* origen) {
 }
 
 // Constructor con memoria dinámica manual
-Jugador::Jugador(const char* nom, const char* ape, int camiseta) {
+Jugador::Jugador(const char* nom, const char* ape, unsigned short int camiseta) {
     nombre = new char[largo_texto(nom) + 1];
     apellido = new char[largo_texto(ape) + 1];
     copiar_texto(nombre, nom);
@@ -72,11 +72,11 @@ const char* Jugador::get_apellido() const {
     return apellido;
 }
 
-int Jugador::get_numero_camiseta() const {
+unsigned short int Jugador::get_numero_camiseta() const {
     return numero_camiseta;
 }
 
-int Jugador::get_goles() const {
+unsigned short int Jugador::get_goles() const {
     return cantidad_goles;
 }
 

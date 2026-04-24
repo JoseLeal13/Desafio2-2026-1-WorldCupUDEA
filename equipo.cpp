@@ -79,11 +79,11 @@ void Equipo::agregarJugador(Jugador* j) {
         cantidadJugadores++;
     }
 }
-
+/*
 void Equipo::mostrarDatos() const {
     cout << "Equipo: " << nombre << " | Ranking: " << rankingFIFA << " | Confederación: " << confederacion << endl;
 }
-
+*/
 Equipo::~Equipo() {
 
     for(int i = 0; i < cantidadJugadores; i++) {

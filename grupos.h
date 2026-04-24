@@ -25,6 +25,8 @@ public:
 
     Equipo* consultarPorPosicion(unsigned short int indice);
 
+    void simularPartidosDelGrupo();
+
     char getId() const { return idGrupo; }
     void mostrarTabla() const;
 };

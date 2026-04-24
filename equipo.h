@@ -47,10 +47,13 @@ public:
     unsigned short int getCantidadJugadores() const { return cantidadJugadores; }
     Jugador* getJugador(int indice) const { return jugadores[indice]; }
 
+    float getPromGolesFavor() const { return promGolesFavorHistorico; }
+    float getPromGolesContra() const { return promGolesContraHistorico; }
+
     Jugador** obtenerTitulares();
     void agregarJugador(Jugador* j);
     void actualizarResultado(unsigned short int gf, unsigned short int gc);
-    void mostrarDatos() const;
+    //void mostrarDatos() const;
 };
 
 #endif
