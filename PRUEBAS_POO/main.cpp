@@ -1,5 +1,6 @@
 #include <iostream>
 #include <fstream>
+#include <cmath> //para usar pow que sirve para elevar en decimales
 using namespace std;
 
 // ─── UTILIDADES DE TEXTO ──────────────────────────────────────────────────────
@@ -176,6 +177,7 @@ private:
     char* nombre_entrenador;
     char* nombre_federacion;
     char* nombre_confederacion;
+    char grupo;
     int puesto_ranking_fifa;
 
     int goles_a_favor;
@@ -248,25 +250,217 @@ public:
     int get_ganados()               const { return partidos_ganados; }
     int get_empatados()             const { return partidos_empatados; }
     int get_perdidos()              const { return partidos_perdidos; }
+    char get_grupo()                const { return grupo;}
+    int get_goles_en_contra()       const { return goles_en_contra;}
+    jugador* get_jugador(int indice)const {
+        if (indice < 0 || indice >= cantidad_jugadores) return nullptr;
+        return lista_jugadores[indice];
+    }
 
     void mostrar_info() const {
         cout << "\n=== " << nombre_pais
              << " | Entrenador: "   << nombre_entrenador
              << " | Ranking FIFA: " << puesto_ranking_fifa
              << " | "               << nombre_confederacion << " ===\n";
-        cout << "  Partidos — G: "  << partidos_ganados
-             << "  E: "             << partidos_empatados
-             << "  P: "             << partidos_perdidos
+        cout << "  Partidos Ganados: "  << partidos_ganados
+             << "  Partidos Empatados: " << partidos_empatados
+             << "  Partidos Perdidos: "  << partidos_perdidos
              << "  | Puntos: "      << calcular_puntos()
-             << "  | DG: "          << calcular_diferencia_goles() << "\n";
+             << "  | DiferenciaGoles: "          << calcular_diferencia_goles() << "\n";
         cout << "  Jugadores:\n";
         for (int i = 0; i < MAXIMO_JUGADORES; i++) {
             if (lista_jugadores[i] != nullptr)
                 lista_jugadores[i]->mostrar_info();
         }
     }
-};
 
+};
+// --- CLASE PARTIDO ----------------------------------------------------------
+class partido {
+private:
+    seleccion* equipo1;
+    seleccion* equipo2;
+    jugador* titulares1[11];
+    jugador* titulares2[11];
+    int goles1;
+    int goles2;
+
+public:
+    //equipo 1 = e1, equipo 2 = e2
+    partido(seleccion* e1, seleccion* e2) {
+        equipo1 = e1;
+        equipo2 = e2;
+
+        // Seed solo una vez en todo el programa (ponelo en main antes de crear partidos)
+        // srand(time(nullptr));
+
+        // 1. Seleccionar titulares
+        seleccionar_titulares(equipo1,titulares1);
+        seleccionar_titulares(equipo2, titulares2);
+
+        // 2. Calcular goles
+        goles1 = simular_goles(equipo1, equipo2);
+        goles2 = simular_goles(equipo2, equipo1);
+
+        // 3. Repartir goles a jugadores
+        repartir_goles(titulares1, goles1);
+        repartir_goles(titulares2, goles2);
+
+        // 4. Repartir tiempo (prorroga si empate)
+        bool prorroga = (goles1 == goles2);
+        repartir_tiempo(titulares1, prorroga);
+        repartir_tiempo(titulares2, prorroga);
+
+        mostrar();
+    }
+    int simular_goles(seleccion* equipoA, seleccion* equipoB){
+
+        //  Constantes del modelo
+        const double mu = 1.35;
+        const double alpha = 0.6;
+        const double beta = 0.4;
+
+        // Obtener datos de los equipos
+        double GFA = equipoA->get_goles_favor();
+        double GCB = equipoB->get_goles_en_contra();
+        unsigned int partidos_jugadosA = equipoA -> get_ganados() +  equipoA -> get_empatados() + equipoA -> get_perdidos();
+        unsigned int partidos_jugadosB = equipoB -> get_ganados() +  equipoB -> get_empatados() + equipoB -> get_perdidos();
+        unsigned int partidos;
+        //hago un promedio con la cantidad de partidos menores, puesto que hay equipos con mas partidos que otros
+        if( partidos_jugadosA > partidos_jugadosB){
+            partidos = partidos_jugadosB;
+        }
+        else{
+            partidos = partidos_jugadosA;
+        }
+
+        GFA = GFA / partidos;
+        GCB = GCB / partidos;
+
+        //  Calcular lambda (goles esperados)
+        double lambda = mu *
+                        pow(GFA / mu, alpha) *
+                        pow(GCB / mu, beta);
+        // El 0.5 para redondear el numero ej: 2.75 se tomaria 2 pero con esto se tomaria 3
+        int goles_esperados = (int)(lambda + 0.5);
+
+        // por si por algun motivo da negativo el lamda
+        if (goles_esperados < 0) {
+            goles_esperados = 0;
+        }
+
+        return goles_esperados;
+
+    }
+    void seleccionar_titulares(seleccion* equipo, jugador* titulares[11]) {
+        // Armo un arreglo con los 26 índices y hago Fisher-Yates shuffle
+        int indices[26];
+        for (int i = 0; i < 26; i++) indices[i] = i;
+
+        // Mezcla parcial: solo necesito los primeros 11
+        for (int i = 0; i < 11; i++) {
+            int j = i + rand() % (26 - i);   // j entre i y 25
+            // swap
+            int temp  = indices[i];
+            indices[i] = indices[j];
+            indices[j] = temp;
+
+            titulares[i] = equipo->get_jugador(indices[i]);
+        }
+    }
+
+    void repartir_goles(jugador* titulares[11], int goles_a_repartir) {
+        // Cada jugador tiene 4% de chance por gol
+        // Para cada gol, tiramos "ruleta" hasta que alguien lo anote
+        for (int g = 0; g < goles_a_repartir; g++) {
+            bool anotado = false;
+            while (!anotado) {
+                for (int i = 0; i < 11 && !anotado; i++) {
+                    // rand() % 100 < 4  =>  4% de probabilidad
+                    if (rand() % 100 < 4) {
+                        titulares[i]->anotar_gol();
+                        anotado = true;
+                    }
+                }
+                // Si nadie anotó en esta pasada, volvemos a intentar
+                // (evita el caso de que el gol quede sin dueño)
+            }
+        }
+    }
+
+    void repartir_tiempo(jugador* titulares[11], bool hay_prorroga) {
+        int minutos = hay_prorroga ? 120 : 90;
+        for (int i = 0; i < 11; i++) {
+            titulares[i]->sumar_minutos(minutos);
+        }
+    }
+    void mostrar_titulares() const {
+
+        cout << "\n=== " << equipo1 -> get_nombre_pais()
+        << " | "               << equipo1 -> get_confederacion() << " ===\n";
+        cout << "  Partidos Ganados: "  << equipo1 -> get_ganados()
+             << "  Partidos Empatados: " << equipo1 -> get_empatados()
+             << "  Partidos Perdidos: "  << equipo1 -> get_perdidos()
+             << "  | Puntos: "      << equipo1 -> get_puntos();
+        cout << "  Jugadores:\n";
+        for (int i = 0; i < 11; i++) {
+            if (titulares1[i] != nullptr)
+                titulares1[i]->mostrar_info();
+        }
+        cout << "\n=== " << equipo2 -> get_nombre_pais()
+             << " | "               << equipo2 -> get_confederacion() << " ===\n";
+        cout << "  Partidos Ganados: "  << equipo2 -> get_ganados()
+             << "  Partidos Empatados: " << equipo2 -> get_empatados()
+             << "  Partidos Perdidos: "  << equipo2 -> get_perdidos()
+             << "  | Puntos: "      << equipo2 -> get_puntos();
+        cout << "  Jugadores:\n";
+        for (int i = 0; i < 11; i++) {
+            if (titulares2[i] != nullptr)
+                titulares2[i]->mostrar_info();
+        }
+    }
+
+    // void simular_partido(){
+    //aqui reparto los goles entre cada uno de los jugadores y hago lo de las faltas y eso
+
+    void mostrar() const {
+        cout << equipo1->get_nombre_pais()
+        << " vs "
+        << equipo2->get_nombre_pais() << "\n";
+        cout << "Marcador: " << get_goles_equipo1() << " a "<< get_goles_equipo2() << endl;
+    }
+    int get_goles_equipo1()            const { return goles1; }
+    int get_goles_equipo2()            const { return goles2; }
+};
+// --- CLASE FASE --------------------------------------------------------------
+/*class fase {
+    private:
+    const unsigned int SELECCIONES_CLASIFICADAS = 32;
+    seleccion* primeros[12];
+    seleccion* segundos[12];
+    seleccion* terceros[8];
+
+//deberia crear aca una lista de la clase partido (16)
+    public:
+
+    void organizar_emparejamiento(){
+
+        //Todos los cabezas de grupo, contra los terceros puestos clasificados.
+        // El resto de cabezas de grupo, con los 4 peores segundos puestos.
+        //El resto de segundos puestos se enfrentan entre sí.
+        //para los primeros contra los 3eros
+        for(unsigned int i = 0; i < 12; i++){
+            if(primeros[i].get_grupo() != terceros[i].get_grupo()){
+
+            }
+
+        }
+
+
+    }
+
+};
+*/
 // ─── CLASE MUNDIAL ───────────────────────────────────────────────────────────
 
 class mundial {
@@ -278,8 +472,8 @@ private:
 
 
 
-    public:
-        mundial() {
+public:
+    mundial() {
         lista_selecciones = new seleccion*[MAXIMO_SELECCIONES];
         for (int i = 0; i < MAXIMO_SELECCIONES; i++) lista_selecciones[i] = nullptr;
         cantidad_selecciones = 0;
@@ -366,28 +560,40 @@ private:
 
 int main() {
     mundial copa_del_mundo;
-
+    srand(time(0));
     // IMPORTANTE: cambia esta ruta por donde tengas el CSV en tu PC
     copa_del_mundo.cargar_desde_archivo("C:\\Users\\Emmanuel\\Documents\\PRUEBAS_POO\\selecciones_clasificadas_mundial.csv");
-//copa_del_mundo.cargar_desde_archivo("C:\\Users\\Emmanuel\\Documents\\PRUEBAS_POO\\archivo.csv");
+    //copa_del_mundo.cargar_desde_archivo("C:\\Users\\Emmanuel\\Documents\\PRUEBAS_POO\\archivo.csv");
     // Si da 0 aquí es porque la ruta está mal o el archivo tiene otro formato
     cout << "Selecciones cargadas: " << copa_del_mundo.get_cantidad_selecciones() << "\n";
 
     // Muestro todas las selecciones
-    copa_del_mundo.mostrar_todas();
+    //copa_del_mundo.mostrar_todas();
 
-    // Muestro Colombia específicamente — índice 12 = fila 15 del CSV (2 cabeceras + 13 datos)
+    /* Muestro Colombia específicamente — índice 12 = fila 15 del CSV (2 cabeceras + 13 datos)
     cout << "\n========================================\n";
     cout << "         DETALLE DE COLOMBIA\n";
     cout << "========================================\n";
     seleccion* col = copa_del_mundo.get_seleccion(12);
+    seleccion* fra = copa_del_mundo.get_seleccion(1);
     if (col != nullptr) {
         col->mostrar_info();
+        fra ->mostrar_info();
     } else {
         cout << "No se encontro Colombia en el indice 12.\n";
         cout << "Solo hay " << copa_del_mundo.get_cantidad_selecciones() << " selecciones cargadas.\n";
         cout << "Revisa que la ruta del archivo CSV sea correcta.\n";
     }
+    */
 
+    seleccion* col = copa_del_mundo.get_seleccion(12);
+    seleccion* fra = copa_del_mundo.get_seleccion(1);
+    col -> mostrar_info();
+    fra -> mostrar_info();
+    cout << "--------------------------------------------"<< endl;
+
+
+    partido p1(col,fra);
+    p1.mostrar_titulares();
     return 0;
 }
