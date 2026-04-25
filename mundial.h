@@ -4,6 +4,7 @@
 #include "lista.h"   //Clase lista genérica
 #include "grupos.h"
 #include "equipo.h"
+#include "fecha.h"
 //include "fase.h"
 
 class Mundial {
@@ -27,6 +28,7 @@ public:
     void cargarDesdeCSV(std::string ruta);
     void prepararBombosYSorteo();
     void ejecutarFaseGrupos();
+    void programarEncuentroEspecifico(int g, int i, int j, Fecha &cal);
     void avanzarAFaseEliminatoria();
 
     // Reportes finales (Lo que pediste)

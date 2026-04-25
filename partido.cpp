@@ -43,12 +43,13 @@ int partido::simular_goles(Equipo* equipoA, Equipo* equipoB) {
 }
 
 void partido::seleccionar_titulares(Equipo* equipo, Jugador* titulares[11]) {
-    // Usamos lógica de obtener titulares aleatorios
     Jugador** temporal = equipo->obtenerTitulares();
-    for(int i = 0; i < 11; i++) {
-        titulares[i] = temporal[i];
+    if (temporal != nullptr) {
+        for(int i = 0; i < 11; i++) {
+            titulares[i] = temporal[i];
+        }
+        delete[] temporal; // Borra el contenedor de 11, NO a los jugadores.
     }
-    delete[] temporal; // Limpieza de memoria dinámica que pidió Equipo.cpp
 }
 
 void partido::repartir_goles(Jugador* titulares[11], int goles_a_repartir) {

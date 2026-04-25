@@ -3,7 +3,6 @@
 #include <sstream>
 #include <cstdlib>
 #include <ctime>
-#include "fecha.h"
 #include "partido.h"
 #include <iostream>
 
@@ -29,17 +28,17 @@ void Mundial::cargarDesdeCSV(string ruta) {
     string linea;
     // 1. Saltar las DOS líneas de cabecera que tiene tu archivo
     getline(archivo, linea); // Salta "Selecciones clasificadas..."
-    getline(archivo, linea); // Salta "Ranking FIFA;País;Director técnico..."
+    getline(archivo, linea); // Salta "Ranking FIFA;País;..."
 
     unsigned short int contadorID = 0;
 
     while (getline(archivo, linea)) {
-        if (linea.empty()) continue; // Ignorar líneas vacías
+        if (linea.empty()) continue;
 
         stringstream ss(linea);
         string r_str, nombre, dt, fed, conf, gf_str, gc_str, p_gan, p_emp, p_per;
 
-        // 2. Usar ';' como delimitador
+        // 2. Extracción de datos con delimitador ';'
         getline(ss, r_str, ';');
         getline(ss, nombre, ';');
         getline(ss, dt, ';');
@@ -47,28 +46,35 @@ void Mundial::cargarDesdeCSV(string ruta) {
         getline(ss, conf, ';');
         getline(ss, gf_str, ';');
         getline(ss, gc_str, ';');
-
-        // Extraemos los que sobran aunque no los uses todos ahora para limpiar el stream
         getline(ss, p_gan, ';');
         getline(ss, p_emp, ';');
         getline(ss, p_per, ';');
 
         try {
             // 3. Conversión de datos
-            // stoi puede fallar si hay espacios, por eso usamos un try-catch
             int r = stoi(r_str);
             float gf_hist = stof(gf_str);
             float gc_hist = stof(gc_str);
 
-            // Crear el equipo con el ID que genera el bucle
+            // Crear el equipo
             Equipo* nuevo = new Equipo(r, nombre, dt, fed, conf, gf_hist, gc_hist, contadorID);
 
-            // Agregar a tu lista genérica
-            listaMaestra.agregar(nuevo, listaMaestra.tamaño());
+            // 4. Lógica de Jugadores: Generar 26 jugadores para este equipo
+            for(int i = 0; i < 26; i++) {
+                string nomJ = "Jugador" + to_string(i + 1);
+                string apeJ = nombre; // El apellido es el nombre del país
 
+                // Creamos el jugador (usando .c_str() porque tu constructor pide const char*)
+                Jugador* j = new Jugador(nomJ.c_str(), apeJ.c_str(), (unsigned short int)(i + 1));
+                nuevo->agregarJugador(j);
+            }
+
+            // 5. Agregar el equipo ya lleno de jugadores a la lista maestra
+            listaMaestra.agregar(nuevo, listaMaestra.tamaño());
             contadorID++;
+
         } catch (...) {
-            // Esto atrapará errores si una línea está mal formateada
+            // Si una línea falla (ej. datos no numéricos), saltamos a la siguiente
             continue;
         }
     }
@@ -85,7 +91,7 @@ void Mundial::prepararBombosYSorteo() {
         Equipo* e = listaMaestra.consultar(i);
 
         // REQUERIMIENTO (a): EE.UU. es anfitrión y va al Grupo A directamente
-        if (e->getNombre() == "Estados Unidos" || e->getNombre() == "USA") {
+        if (e->getNombre() == "United States") {
             grupos[0]->agregarEquipo(e); // grupos[0] es el Grupo A
             continue; // No lo agregamos a ningún bombo
         }
@@ -95,37 +101,41 @@ void Mundial::prepararBombosYSorteo() {
         else if (bombo2.tamaño() < 12) bombo2.agregar(e, bombo2.tamaño());
         else if (bombo3.tamaño() < 12) bombo3.agregar(e, bombo3.tamaño());
         else bombo4.agregar(e, bombo4.tamaño());
+    }
 
     // Array de punteros a nuestras listas de bombos para iterar
-        lista<Equipo*>* bombos[] = {&bombo1, &bombo2, &bombo3, &bombo4};
+    lista<Equipo*>* bombos[] = {&bombo1, &bombo2, &bombo3, &bombo4};
 
-        //   srand(time(0));
+    // 3. Proceso de Sorteo: Por cada Bombo (1 al 4)
+    for (int b = 0; b < 4; b++) {
+        // Por cada Grupo (A al L)
+        for (int g = 0; g < totalGrupos; g++) {
 
-        // 3. Proceso de Sorteo: Por cada Bombo (1 al 4)
-        for (int b = 0; b < 4; b++) {
-            // Por cada Grupo (A al L)
-            for (int g = 0; g < totalGrupos; g++) {
-                bool asignado = false;
-                int intentos = 0;
+            // Nota: saltar sorteo para el alfitrion
+            // Si estamos en el primer bombo y el grupo es el A, saltamos
+            // porque United States ya ocupa esa posición.
+            if (b == 0 && g == 0) continue;
 
-                while (!asignado && !bombos[b]->esVacia()) {
-                    int tam = bombos[b]->tamaño();
-                    int posAleatoria = rand() % tam;
-                    Equipo* candidato = bombos[b]->consultar(posAleatoria);
+            bool asignado = false;
+            int intentos = 0;
 
-                    // Verificamos restricciones geográficas (Tu método en grupos.cpp)
-                    if (grupos[g]->esValidoAgregar(candidato)) {
+            while (!asignado && !bombos[b]->esVacia()) {
+                int tam = bombos[b]->tamaño();
+                int posAleatoria = rand() % tam;
+                Equipo* candidato = bombos[b]->consultar(posAleatoria);
+
+                // Verificamos restricciones geográficas (método en grupos.cpp)
+                if (grupos[g]->esValidoAgregar(candidato)) {
+                    grupos[g]->agregarEquipo(candidato);
+                    bombos[b]->eliminar(candidato); // Lo sacamos del bombo para que no repita
+                    asignado = true;
+                } else {
+                    intentos++;
+                    // "Seguro" para evitar bucles infinitos en sorteos geográficamente imposibles
+                    if (intentos > 100) {
                         grupos[g]->agregarEquipo(candidato);
-                        bombos[b]->eliminar(candidato); // Lo sacamos del bombo para que no repita
+                        bombos[b]->eliminar(candidato);
                         asignado = true;
-                    } else {
-                        intentos++;
-                        // "Seguro" para evitar bucles infinitos en sorteos geográficamente imposibles
-                        if (intentos > 100) {
-                            grupos[g]->agregarEquipo(candidato);
-                            bombos[b]->eliminar(candidato);
-                            asignado = true;
-                        }
                     }
                 }
             }
@@ -134,74 +144,72 @@ void Mundial::prepararBombosYSorteo() {
 }
 
 void Mundial::ejecutarFaseGrupos() {
-    Fecha calendario(48);
-    short int partidosTotales = 72; // 12 grupos * 6 partidos cada uno
+    Fecha calendario(100);
+    short int partidosTotales = 72;
     short int partidosJugados = 0;
 
-    while (partidosJugados < partidosTotales) {
-        bool seProgramoAlgoHoy = false;
-
-        // Intentamos buscar partidos para el día actual recorriendo los grupos
+    while (partidosJugados < partidosTotales && calendario.getDiaActual() <= 19) {
         for (int g = 0; g < totalGrupos; g++) {
+            if (calendario.getPartidosHoy() >= 4) break;
 
-            // Cada grupo tiene 4 equipos, revisamos todas las combinaciones (i vs j)
-            for(int i = 0; i < 4; i++) {
-                for(int j = i + 1; j < 4; j++) {
+            for (int i = 0; i < 4; i++) {
+                for (int j = i + 1; j < 4; j++) {
+                    if (calendario.getPartidosHoy() >= 4) break;
 
                     Equipo* e1 = grupos[g]->consultarPorPosicion(i);
                     Equipo* e2 = grupos[g]->consultarPorPosicion(j);
 
-                    // 1. Verificamos si los equipos tienen menos de 3 partidos (fase grupos)
-                    // 2. Verificamos si la clase FECHA permite que jueguen (descanso y tope de 4/día)
-                    if (e1->getPartidosJugados() < 3 && e2->getPartidosJugados() < 3) {
+                    if (!e1 || !e2) continue;
 
-                        if (calendario.puedeJugar(e1->getId(), e2->getId())) {
+                    if (calendario.puedeJugar(e1->getRanking(), e2->getRanking())) {
+                        // marcarPartidoComoJugado usa la matriz interna 'enfrentamientos',
+                        // esto es perfecto porque no depende del orden.
+                        if (grupos[g]->marcarPartidoComoJugado(i, j)) {
 
-                            // Intentamos marcar el partido en el grupo para no repetirlo
-                            if (grupos[g]->marcarPartidoComoJugado(i, j)) {
+                            cout << "["; calendario.mostrarFecha(); cout << "] ";
+                            cout << "Grupo " << (char)('A' + g) << ": " << e1->getNombre() << " vs " << e2->getNombre() << endl;
 
-                                cout << "["; calendario.mostrarFecha(); cout << "] ";
-                                cout << "Grupo " << (char)('A' + g) << ": ";
+                            partido p(e1, e2);
+                            e1->actualizarResultado(p.get_goles_equipo1(), p.get_goles_equipo2());
+                            e2->actualizarResultado(p.get_goles_equipo2(), p.get_goles_equipo1());
 
-                                // Creamos el objeto partido (tu constructor ya simula y muestra)
-                                partido p(e1, e2);
-
-                                // Usamos los nuevos métodos get de partido.h
-                                unsigned short int g1 = p.get_goles_equipo1();
-                                unsigned short int g2 = p.get_goles_equipo2();
-
-                                // Actualizamos los puntos y goles en la tabla
-                                e1->actualizarResultado(g1, g2);
-                                e2->actualizarResultado(g2, g1);
-
-                                // IMPORTANTE: Registrar en el calendario para el descanso de 3 días
-                                calendario.registrarEncuentro(e1->getId(), e2->getId());
-
-                                partidosJugados++;
-                                seProgramoAlgoHoy = true;
-                            }
+                            calendario.registrarEncuentro(e1->getRanking(), e2->getRanking());
+                            partidosJugados++;
                         }
                     }
                 }
             }
         }
-
-        // SI NADIE PUDO JUGAR HOY:
-        // Si recorrimos todos los grupos y 'seProgramoAlgoHoy' sigue en false,
-        // significa que los equipos disponibles están descansando o ya se jugaron 4 partidos.
-        // Debemos avanzar el día en el calendario.
-        if (!seProgramoAlgoHoy && partidosJugados < partidosTotales) {
-            // Registramos un encuentro "fantasma" para forzar que partidosHoy llegue a 4
-            // y la clase Fecha pase al día siguiente automáticamente.
-            while(calendario.getPartidosHoy() != 0) {
-                calendario.registrarEncuentro(99, 99); // 99 es un ID que no existe
-            }
-        }
+        calendario.avanzarDia();
     }
 
-    // Al finalizar todos los partidos, mostramos las tablas de posiciones
+    // RECIEN AQUI ORDENAMOS
     for (int i = 0; i < totalGrupos; i++) {
+        grupos[i]->ordenarPorPuntos(); // Ahora sí, para mostrar la tabla final
         grupos[i]->mostrarTabla();
+    }
+}
+
+void Mundial::programarEncuentroEspecifico(int g, int i, int j, Fecha &cal) {
+    Equipo* e1 = grupos[g]->consultarPorPosicion(i);
+    Equipo* e2 = grupos[g]->consultarPorPosicion(j);
+
+    if (e1 && e2) {
+        // El bucle de espera: si no pueden jugar por descanso o cupo, avanza el tiempo
+        while (!cal.puedeJugar(e1->getId(), e2->getId())) {
+            cal.avanzarDia();
+        }
+
+        if (grupos[g]->marcarPartidoComoJugado(i, j)) {
+            cout << "["; cal.mostrarFecha(); cout << "] ";
+            cout << "Grupo " << (char)('A' + g) << ": ";
+
+            partido p(e1, e2);
+            e1->actualizarResultado(p.get_goles_equipo1(), p.get_goles_equipo2());
+            e2->actualizarResultado(p.get_goles_equipo2(), p.get_goles_equipo1());
+
+            cal.registrarEncuentro(e1->getId(), e2->getId());
+        }
     }
 }
 

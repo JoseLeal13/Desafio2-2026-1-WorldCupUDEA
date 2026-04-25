@@ -31,6 +31,8 @@ public:
     // Muestra la fecha (p.ej. 20 de Junio)
     void mostrarFecha() const;
 
+    void avanzarDia();
+
     // Getters
     unsigned short int getDiaActual() const;
     unsigned short int getPartidosHoy() const;
