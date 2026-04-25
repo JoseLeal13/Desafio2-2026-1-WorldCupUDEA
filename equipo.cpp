@@ -6,7 +6,7 @@
 using namespace std;
 
 // CAMBIO: Constructor con nombres de parámetros claros y asignación correcta
-Equipo::Equipo(unsigned short int rank, string nom, string dt, string fed, string conf, float pgf, float pgc) {
+Equipo::Equipo(unsigned short int rank, string nom, string dt, string fed, string conf, float pgf, float pgc, unsigned short int _id) {
     rankingFIFA = rank;
     nombre = nom;
     directorTecnico = dt;
@@ -25,6 +25,8 @@ Equipo::Equipo(unsigned short int rank, string nom, string dt, string fed, strin
     golesFavorTorneo = 0;
     golesContraTorneo = 0;
     cantidadJugadores = 0;
+
+    id = 0;
 
     // El arreglo de punteros sigue siendo memoria dinámica (Requisito del core)
     jugadores = new Jugador*[26];
@@ -84,6 +86,7 @@ void Equipo::mostrarDatos() const {
     cout << "Equipo: " << nombre << " | Ranking: " << rankingFIFA << " | Confederación: " << confederacion << endl;
 }
 */
+
 Equipo::~Equipo() {
 
     for(int i = 0; i < cantidadJugadores; i++) {

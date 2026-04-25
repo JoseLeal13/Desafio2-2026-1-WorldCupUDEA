@@ -17,7 +17,7 @@ private:
 
     // 3. ESTADÍSTICAS GLOBALES
     Equipo* campeon;
-    Fases* faseFinal;
+    //Fases* faseFinal;
 
 public:
     Mundial();

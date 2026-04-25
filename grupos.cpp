@@ -9,9 +9,9 @@ Grupo::Grupo(char _id) {
     cantEquipos = 0;
     // Reservamos espacio para 4 punteros a Equipo
     equipos = new Equipo*[4];
-    for (int i = 0; i < 4; i++) {
-        equipos[i] = nullptr;
-    }
+    for(int i=0; i<4; i++)
+        for(int j=0; j<4; j++)
+            enfrentamientos[i][j] = false;
 }
 
 void Grupo::agregarEquipo(Equipo* e) {
@@ -65,6 +65,16 @@ void Grupo::ordenarPorPuntos() {
         }
     }
 }
+
+bool Grupo::marcarPartidoComoJugado(short int i,short int j) {
+    if(!enfrentamientos[i][j]) {
+        enfrentamientos[i][j] = true;
+        enfrentamientos[j][i] = true;
+        return true;
+    }
+    return false;
+}
+
 
 // Retorna los 2 mejores (o 3 según necesites)
 Equipo** Grupo::obtenerClasificados(unsigned short int &cuantos) {

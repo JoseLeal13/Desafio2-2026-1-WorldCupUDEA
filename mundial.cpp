@@ -3,6 +3,8 @@
 #include <sstream>
 #include <cstdlib>
 #include <ctime>
+#include "fecha.h"
+#include "partido.h"
 #include <iostream>
 
 using namespace std;
@@ -24,39 +26,55 @@ void Mundial::cargarDesdeCSV(string ruta) {
         return;
     }
 
-    string linea, dato;
-    getline(archivo, linea); // Saltar cabecera (Ranking, Nombre, DT, Fed, Conf, GF_Hist, GC_Hist)
+    string linea;
+    // 1. Saltar las DOS líneas de cabecera que tiene tu archivo
+    getline(archivo, linea); // Salta "Selecciones clasificadas..."
+    getline(archivo, linea); // Salta "Ranking FIFA;País;Director técnico..."
+
+    unsigned short int contadorID = 0;
 
     while (getline(archivo, linea)) {
+        if (linea.empty()) continue; // Ignorar líneas vacías
+
         stringstream ss(linea);
+        string r_str, nombre, dt, fed, conf, gf_str, gc_str, p_gan, p_emp, p_per;
 
-        // Variables para extraer los datos
-        string r_str, nombre, dt, fed, conf, gf_str, gc_str;
+        // 2. Usar ';' como delimitador
+        getline(ss, r_str, ';');
+        getline(ss, nombre, ';');
+        getline(ss, dt, ';');
+        getline(ss, fed, ';');
+        getline(ss, conf, ';');
+        getline(ss, gf_str, ';');
+        getline(ss, gc_str, ';');
 
-        // Extracción campo por campo (asumiendo formato CSV estándar)
-        getline(ss, r_str, ',');
-        getline(ss, nombre, ',');
-        getline(ss, dt, ',');
-        getline(ss, fed, ',');
-        getline(ss, conf, ',');
-        getline(ss, gf_str, ',');
-        getline(ss, gc_str, ',');
+        // Extraemos los que sobran aunque no los uses todos ahora para limpiar el stream
+        getline(ss, p_gan, ';');
+        getline(ss, p_emp, ';');
+        getline(ss, p_per, ';');
 
-        // Conversión de tipos y creación del objeto Equipo
-        // Aquí es donde el Equipo recibe sus datos históricos
         try {
+            // 3. Conversión de datos
+            // stoi puede fallar si hay espacios, por eso usamos un try-catch
             int r = stoi(r_str);
             float gf_hist = stof(gf_str);
             float gc_hist = stof(gc_str);
 
-            Equipo* nuevo = new Equipo(r, nombre, dt, fed, conf, gf_hist, gc_hist);
+            // Crear el equipo con el ID que genera el bucle
+            Equipo* nuevo = new Equipo(r, nombre, dt, fed, conf, gf_hist, gc_hist, contadorID);
+
+            // Agregar a tu lista genérica
             listaMaestra.agregar(nuevo, listaMaestra.tamaño());
+
+            contadorID++;
         } catch (...) {
-            cout << "Error procesando línea: " << linea << endl;
+            // Esto atrapará errores si una línea está mal formateada
+            continue;
         }
     }
+
     archivo.close();
-    cout << "-> Carga completa: " << listaMaestra.tamaño() << " equipos en memoria." << endl;
+    cout << "-> Carga completa: " << listaMaestra.tamaño() << " equipos cargados correctamente." << endl;
 }
 
 void Mundial::prepararBombosYSorteo() {
@@ -116,9 +134,73 @@ void Mundial::prepararBombosYSorteo() {
 }
 
 void Mundial::ejecutarFaseGrupos() {
+    Fecha calendario(48);
+    short int partidosTotales = 72; // 12 grupos * 6 partidos cada uno
+    short int partidosJugados = 0;
+
+    while (partidosJugados < partidosTotales) {
+        bool seProgramoAlgoHoy = false;
+
+        // Intentamos buscar partidos para el día actual recorriendo los grupos
+        for (int g = 0; g < totalGrupos; g++) {
+
+            // Cada grupo tiene 4 equipos, revisamos todas las combinaciones (i vs j)
+            for(int i = 0; i < 4; i++) {
+                for(int j = i + 1; j < 4; j++) {
+
+                    Equipo* e1 = grupos[g]->consultarPorPosicion(i);
+                    Equipo* e2 = grupos[g]->consultarPorPosicion(j);
+
+                    // 1. Verificamos si los equipos tienen menos de 3 partidos (fase grupos)
+                    // 2. Verificamos si la clase FECHA permite que jueguen (descanso y tope de 4/día)
+                    if (e1->getPartidosJugados() < 3 && e2->getPartidosJugados() < 3) {
+
+                        if (calendario.puedeJugar(e1->getId(), e2->getId())) {
+
+                            // Intentamos marcar el partido en el grupo para no repetirlo
+                            if (grupos[g]->marcarPartidoComoJugado(i, j)) {
+
+                                cout << "["; calendario.mostrarFecha(); cout << "] ";
+                                cout << "Grupo " << (char)('A' + g) << ": ";
+
+                                // Creamos el objeto partido (tu constructor ya simula y muestra)
+                                partido p(e1, e2);
+
+                                // Usamos los nuevos métodos get de partido.h
+                                unsigned short int g1 = p.get_goles_equipo1();
+                                unsigned short int g2 = p.get_goles_equipo2();
+
+                                // Actualizamos los puntos y goles en la tabla
+                                e1->actualizarResultado(g1, g2);
+                                e2->actualizarResultado(g2, g1);
+
+                                // IMPORTANTE: Registrar en el calendario para el descanso de 3 días
+                                calendario.registrarEncuentro(e1->getId(), e2->getId());
+
+                                partidosJugados++;
+                                seProgramoAlgoHoy = true;
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        // SI NADIE PUDO JUGAR HOY:
+        // Si recorrimos todos los grupos y 'seProgramoAlgoHoy' sigue en false,
+        // significa que los equipos disponibles están descansando o ya se jugaron 4 partidos.
+        // Debemos avanzar el día en el calendario.
+        if (!seProgramoAlgoHoy && partidosJugados < partidosTotales) {
+            // Registramos un encuentro "fantasma" para forzar que partidosHoy llegue a 4
+            // y la clase Fecha pase al día siguiente automáticamente.
+            while(calendario.getPartidosHoy() != 0) {
+                calendario.registrarEncuentro(99, 99); // 99 es un ID que no existe
+            }
+        }
+    }
+
+    // Al finalizar todos los partidos, mostramos las tablas de posiciones
     for (int i = 0; i < totalGrupos; i++) {
-        cout << "\n--- Partidos Grupo " << char('A' + i) << " ---" << endl;
-        grupos[i]->simularPartidosDelGrupo();
         grupos[i]->mostrarTabla();
     }
 }
@@ -214,7 +296,7 @@ Equipo* Mundial::sorteoPonderado(Equipo* e1, Equipo* e2) {
         return e2; // Ganó el de menor ranking (menos probable)
     }
 }
-
+/*
 void Mundial::avanzarAFaseEliminatoria() {
     // 1. Declaramos los punteros para recibir los arreglos dinámicos
     Equipo** primeros = nullptr;
@@ -237,7 +319,7 @@ void Mundial::avanzarAFaseEliminatoria() {
     cout << " Clasificados enviados a eliminacion directa." << endl;
     cout << "------------------------------------------------\n" << endl;
 }
-
+*/
 void Mundial::imprimirConsumoMemoria() {
     cout << "========================================" << endl;
     cout << " REPORTE DE MEMORIA (ESTRUCTURAS DINAMICAS)" << endl;

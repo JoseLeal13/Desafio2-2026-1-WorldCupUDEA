@@ -30,9 +30,11 @@ private:
     unsigned short int partidosEmpatados;
     unsigned short int partidosPerdidos;
 
+    unsigned short int id;
+
 public:
     // Constructor con std::string
-    Equipo(unsigned short int rank, std::string nom, std::string dt, std::string fed, std::string conf, float pgf, float pgc);
+    Equipo(unsigned short int rank, std::string nom, std::string dt, std::string fed, std::string conf, float pgf, float pgc, unsigned short int _id);
     ~Equipo();
 
     // Getters necesarios para Mundial y Grupos
@@ -49,6 +51,9 @@ public:
 
     float getPromGolesFavor() const { return promGolesFavorHistorico; }
     float getPromGolesContra() const { return promGolesContraHistorico; }
+
+    unsigned short int getId() const { return id; }
+    unsigned short int getPartidosJugados() const { return partidosJugados; }
 
     Jugador** obtenerTitulares();
     void agregarJugador(Jugador* j);

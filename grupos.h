@@ -8,6 +8,7 @@ private:
     char idGrupo;                    // 'A', 'B', 'C'...
     Equipo** equipos;                // Arreglo de 4 punteros a Equipo
     unsigned short int cantEquipos;  // Control de llenado (máximo 4)
+    bool enfrentamientos[4][4];
 
 public:
     Grupo(char _id);
@@ -17,6 +18,8 @@ public:
 
     // Este es el método más importante para avanzar a la siguiente fase
     void ordenarPorPuntos();
+
+    bool marcarPartidoComoJugado(short int i,short int j);
 
     // Retorna los equipos que pasan (1ro, 2do y quizás 3ro según el torneo)
     Equipo** obtenerClasificados(unsigned short int &cuantos);
