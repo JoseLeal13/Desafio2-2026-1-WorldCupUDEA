@@ -1,7 +1,7 @@
 #ifndef EQUIPO_H
 #define EQUIPO_H
 
-//#include "Jugador.h"
+#include "jugador.h"
 #include <string>
 #include <iostream>
 
@@ -25,9 +25,16 @@ private:
     unsigned short int golesFavorTorneo;
     unsigned short int golesContraTorneo;
 
+    unsigned short int partidosJugados;
+    unsigned short int partidosGanados;
+    unsigned short int partidosEmpatados;
+    unsigned short int partidosPerdidos;
+
+    unsigned short int id;
+
 public:
     // Constructor con std::string
-    Equipo(unsigned short int rank, std::string nom, std::string dt, std::string fed, std::string conf, float pgf, float pgc);
+    Equipo(unsigned short int rank, std::string nom, std::string dt, std::string fed, std::string conf, float pgf, float pgc, unsigned short int _id);
     ~Equipo();
 
     // Getters necesarios para Mundial y Grupos
@@ -42,10 +49,16 @@ public:
     unsigned short int getCantidadJugadores() const { return cantidadJugadores; }
     Jugador* getJugador(int indice) const { return jugadores[indice]; }
 
+    float getPromGolesFavor() const { return promGolesFavorHistorico; }
+    float getPromGolesContra() const { return promGolesContraHistorico; }
+
+    unsigned short int getId() const { return id; }
+    unsigned short int getPartidosJugados() const { return partidosJugados; }
+
     Jugador** obtenerTitulares();
     void agregarJugador(Jugador* j);
     void actualizarResultado(unsigned short int gf, unsigned short int gc);
-    void mostrarDatos() const;
+    //void mostrarDatos() const;
 };
 
 #endif

@@ -4,6 +4,9 @@
 #include "lista.h"   //Clase lista genérica
 #include "grupos.h"
 #include "equipo.h"
+#include "partido.h"
+#include "fecha.h"
+#include "fase.h"
 
 class Mundial {
 private:
@@ -16,6 +19,7 @@ private:
 
     // 3. ESTADÍSTICAS GLOBALES
     Equipo* campeon;
+    Fases* faseFinal;
 
 public:
     Mundial();
@@ -23,11 +27,19 @@ public:
 
     // Lógica principal
     void cargarDesdeCSV(std::string ruta);
+    void cargarJugadoresDesdeCSV(std::string ruta);
     void prepararBombosYSorteo();
     void ejecutarFaseGrupos();
+    void programarEncuentroEspecifico(int g, int i, int j, Fecha &cal);
+    void avanzarAFaseEliminatoria();
+    void simularRondasFinales();
 
     // Reportes finales (Lo que pediste)
     void mostrarReporteFinal();
+    void determinarClasificados(Equipo** &primeros, Equipo** &segundos, Equipo** &mejoresTerceros);
+    bool compararEstadisticas(Equipo* e1, Equipo* e2);
+    Equipo* sorteoPonderado(Equipo* e1, Equipo* e2);
+
     void imprimirConsumoMemoria();
     Equipo* obtenerMaximoGoleadorTorneo(); // Busca en la listaMaestra
 };

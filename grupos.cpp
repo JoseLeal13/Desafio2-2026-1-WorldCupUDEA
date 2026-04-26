@@ -1,4 +1,5 @@
 #include "grupos.h"
+#include "partido.h"
 #include <iostream>
 
 using namespace std;
@@ -8,9 +9,9 @@ Grupo::Grupo(char _id) {
     cantEquipos = 0;
     // Reservamos espacio para 4 punteros a Equipo
     equipos = new Equipo*[4];
-    for (int i = 0; i < 4; i++) {
-        equipos[i] = nullptr;
-    }
+    for(int i=0; i<4; i++)
+        for(int j=0; j<4; j++)
+            enfrentamientos[i][j] = false;
 }
 
 void Grupo::agregarEquipo(Equipo* e) {
@@ -65,6 +66,16 @@ void Grupo::ordenarPorPuntos() {
     }
 }
 
+bool Grupo::marcarPartidoComoJugado(short int i,short int j) {
+    if(!enfrentamientos[i][j]) {
+        enfrentamientos[i][j] = true;
+        enfrentamientos[j][i] = true;
+        return true;
+    }
+    return false;
+}
+
+
 // Retorna los 2 mejores (o 3 según necesites)
 Equipo** Grupo::obtenerClasificados(unsigned short int &cuantos) {
     ordenarPorPuntos(); // Aseguramos que esté ordenada
@@ -77,17 +88,63 @@ Equipo** Grupo::obtenerClasificados(unsigned short int &cuantos) {
     }
 
     return clasificados;
-    // Recuerda: quien reciba este puntero (Fase) debe hacer delete[]
+    // Nota: quien reciba este puntero (Fases) debe hacer delete[]
+}
+
+void Grupo::simularPartidosDelGrupo() {
+    // Este ciclo hace que los 4 equipos del grupo jueguen entre sí
+    for (int i = 0; i < 4; i++) {
+        for (int j = i + 1; j < 4; j++) {
+
+            // 1. Se crea el partido (usando los equipos del arreglo 'equipos')
+            partido p(equipos[i], equipos[j]);
+
+            // 2. Sacamos los goles que el partido de la clase partido
+            unsigned short int goles1 = p.get_goles_equipo1();
+            unsigned short int goles2 = p.get_goles_equipo2();
+
+            // 3. Método de equipo.cpp
+            // Actualizamos al equipo i con sus goles a favor y en contra
+            equipos[i]->actualizarResultado(goles1, goles2);
+            // Actualizamos al equipo j con los goles al revés
+            equipos[j]->actualizarResultado(goles2, goles1);
+
+            // Opcional: imprimir el resultado para ver que funcione
+            cout << equipos[i]->getNombre() << " " << goles1 << " - "
+                 << goles2 << " " << equipos[j]->getNombre() << endl;
+        }
+    }
+    // Después de los 6 partidos, ordenamos la tabla con tu función de burbuja
+    ordenarPorPuntos();
 }
 
 void Grupo::mostrarTabla() const {
-    cout << "\n--- TABLA GRUPO " << idGrupo << " ---" << endl;
-    cout << "POS | EQUIPO       | PTS | DG" << endl;
+    cout << "\n===========================================================" << endl;
+    cout << "  TABLA DE POSICIONES - GRUPO " << idGrupo << endl;
+    cout << "===========================================================" << endl;
+
+    // Usamos \t (tabulador) para separar las columnas
+    cout << "POS\t| EQUIPO\t\t| PTS\t| DG" << endl;
+    cout << "-----------------------------------------------------------" << endl;
+
     for (int i = 0; i < cantEquipos; i++) {
+        // Calculamos la diferencia de goles
         int dg = equipos[i]->getGolesFavorTorneo() - equipos[i]->getGolesContraTorneo();
-        cout << i + 1 << "   | " << equipos[i]->getNombre() << "\t | "
-             << equipos[i]->getPuntos() << "   | " << dg << endl;
+
+        cout << i + 1 << "\t| "
+             << equipos[i]->getNombre();
+
+        // Truco: Si el nombre es muy corto, metemos doble tabulación para que no se mueva la tabla
+        if (equipos[i]->getNombre().length() < 8) {
+            cout << "\t\t| ";
+        } else {
+            cout << "\t| ";
+        }
+
+        cout << equipos[i]->getPuntos() << "\t| "
+             << dg << endl;
     }
+    cout << "===========================================================" << endl;
 }
 
 bool Grupo::esValidoAgregar(Equipo* nuevo) {
@@ -114,6 +171,13 @@ bool Grupo::esValidoAgregar(Equipo* nuevo) {
     }
 
     return true;
+}
+
+Equipo* Grupo::consultarPorPosicion(unsigned short int indice) {
+    if (indice >= 0 && indice < cantEquipos) {
+        return equipos[indice];
+    }
+    return nullptr;
 }
 
 Grupo::~Grupo() {
