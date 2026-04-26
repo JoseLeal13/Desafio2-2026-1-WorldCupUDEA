@@ -30,6 +30,17 @@ private:
     // Nota: El emparejamiento usa [16][2] porque son 16 partidos de 2 equipos cada uno
     Equipo* emparejamiento_dieciseisavos[16][2];
 
+    // ── Almacenamiento de equipos por ronda (para reporte de confederaciones) ─
+    // R16: los 32 equipos que jugaron dieciseisavos
+    Equipo* equiposR16[32];
+    // R8: los 16 equipos que jugaron octavos
+    Equipo* equiposR8[16];
+    // R4: los 8 equipos que jugaron cuartos
+    Equipo* equiposR4[8];
+
+    // Podio final
+    Equipo* podio[4]; // [0]=campeon, [1]=subcampeon, [2]=tercero, [3]=cuarto
+
     // ── Helpers privados (Utilidades internas) ────────────────────────────────
     Equipo* obtener_ganador(partido* p);
     Equipo* obtener_perdedor(partido* p);
@@ -63,6 +74,20 @@ public:
     void jugar_final();
 
     long calcularMemoriaDinamica() const;
+
+    // ── Getters para reportes finales ────────────────────────────────────────
+    // Retorna el campeón (ganador de la final)
+    Equipo* getCampeon() const;
+
+    // Retorna el podio completo: [0]=campeon, [1]=subcampeon, [2]=tercero, [3]=cuarto
+    // El llamador debe hacer delete[] al arreglo retornado
+    Equipo** getTop4() const;
+
+    // Confederación dominante en R16 (32 equipos), R8 (16) y R4 (8)
+    // Imprime el reporte directamente
+    void reporteConfederaciones() const;
+
+
 };
 
 #endif

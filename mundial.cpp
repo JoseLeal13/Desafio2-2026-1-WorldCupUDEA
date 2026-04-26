@@ -7,11 +7,14 @@
 
 using namespace std;
 
+long Mundial::totalIteraciones = 0;
+
 Mundial::Mundial() {
     // totalGrupos debe ser 12 según el requerimiento del mundial de 48 equipos
     grupos = new Grupo*[totalGrupos];
     for(int i = 0; i < totalGrupos; i++) {
         grupos[i] = new Grupo('A' + i);
+        registrarIteracion(); // Contamos la creación de cada grupo
     }
     campeon = nullptr;
 }
@@ -32,6 +35,7 @@ void Mundial::cargarDesdeCSV(string ruta) {
     unsigned short int contadorID = 0;
 
     while (getline(archivo, linea)) {
+        registrarIteracion(); // Cada línea procesada es una iteración
         if (linea.empty()) continue;
 
         stringstream ss(linea);
@@ -49,6 +53,7 @@ void Mundial::cargarDesdeCSV(string ruta) {
         getline(ss, p_emp, ';');
         getline(ss, p_per, ';');
 
+        Equipo* nuevo = nullptr;
         try {
             // 3. Conversión de datos
             int r = stoi(r_str);
@@ -56,14 +61,18 @@ void Mundial::cargarDesdeCSV(string ruta) {
             float gc_hist = stof(gc_str);
 
             // Crear el equipo (se inicia con cantidadJugadores = 0 y el arreglo de punteros en null)
-            Equipo* nuevo = new Equipo(r, nombre, dt, fed, conf, gf_hist, gc_hist, contadorID);
+            nuevo = new Equipo(r, nombre, dt, fed, conf, gf_hist, gc_hist, contadorID);
 
             // 4. Agregar el equipo a la lista maestra
             listaMaestra.agregar(nuevo, listaMaestra.tamaño());
             contadorID++;
 
         } catch (...) {
-            // Si una línea falla, saltamos a la siguiente
+            // 5. Si algo falló (por ejemplo, stoi o agregar),
+            // verificamos si alcanzamos a crear el objeto para borrarlo.
+            if (nuevo != nullptr) {
+                delete nuevo;
+            }
             continue;
         }
     }
@@ -85,6 +94,7 @@ void Mundial::cargarJugadoresDesdeCSV(string ruta) {
     getline(archivo, linea);
 
     while (getline(archivo, linea)) {
+        registrarIteracion(); // Cada línea procesada es una iteración
         if (linea.empty()) continue;
 
         stringstream ss(linea);
@@ -153,7 +163,6 @@ void Mundial::prepararBombosYSorteo() {
     for (int b = 0; b < 4; b++) {
         // Por cada Grupo (A al L)
         for (int g = 0; g < totalGrupos; g++) {
-
             // Nota: saltar sorteo para el alfitrion
             // Si estamos en el primer bombo y el grupo es el A, saltamos
             // porque United States ya ocupa esa posición.
@@ -163,6 +172,8 @@ void Mundial::prepararBombosYSorteo() {
             int intentos = 0;
 
             while (!asignado && !bombos[b]->esVacia()) {
+
+                registrarIteracion();
                 int tam = bombos[b]->tamaño();
                 int posAleatoria = rand() % tam;
                 Equipo* candidato = bombos[b]->consultar(posAleatoria);
@@ -192,6 +203,7 @@ void Mundial::ejecutarFaseGrupos() {
     short int partidosJugados = 0;
 
     while (partidosJugados < partidosTotales && calendario.getDiaActual() <= 19) {
+        registrarIteracion();
         for (int g = 0; g < totalGrupos; g++) {
             if (calendario.getPartidosHoy() >= 4) break;
 
@@ -228,6 +240,7 @@ void Mundial::ejecutarFaseGrupos() {
 
     // RECIEN AQUI ORDENAMOS
     for (int i = 0; i < totalGrupos; i++) {
+        registrarIteracion();
         grupos[i]->ordenarPorPuntos(); // Ahora sí, para mostrar la tabla final
         grupos[i]->mostrarTabla();
     }
@@ -241,6 +254,7 @@ void Mundial::programarEncuentroEspecifico(int g, int i, int j, Fecha &cal) {
         // El bucle de espera: si no pueden jugar por descanso o cupo, avanza el tiempo
         while (!cal.puedeJugar(e1->getId(), e2->getId())) {
             cal.avanzarDia();
+            registrarIteracion();
         }
 
         if (grupos[g]->marcarPartidoComoJugado(i, j)) {
@@ -265,7 +279,7 @@ void Mundial::determinarClasificados(Equipo** &primeros, Equipo** &segundos, Equ
     // 2. Extraer de cada grupo (Estructura clara)
     for (int i = 0; i < 12; i++) {
         grupos[i]->ordenarPorPuntos(); // Usa burbuja de grupos.cpp
-
+        registrarIteracion();
         primeros[i] = grupos[i]->consultarPorPosicion(0);
         segundos[i] = grupos[i]->consultarPorPosicion(1);
         candidatosTerceros[i] = grupos[i]->consultarPorPosicion(2);
@@ -277,6 +291,7 @@ void Mundial::determinarClasificados(Equipo** &primeros, Equipo** &segundos, Equ
         for (int j = 0; j < 12 - i - 1; j++) {
             // Si el de la derecha es mejor que el de la izquierda, intercambiamos
             // Queremos que los mejores queden al principio (índices 0 a 7)
+            registrarIteracion();
             if (compararEstadisticas(candidatosTerceros[j + 1], candidatosTerceros[j])) {
                 Equipo* temp = candidatosTerceros[j];
                 candidatosTerceros[j] = candidatosTerceros[j + 1];
@@ -436,6 +451,162 @@ void Mundial::imprimirConsumoMemoria() {
     cout << " TOTAL ESTIMADO EN MEMORIA HEAP:        " << totalTotal << " bytes." << endl;
     cout << " TOTAL EN KILOBYTES (KB):               " << (totalTotal / 1024.0) << " KB." << endl;
     cout << "====================================================\n" << endl;
+}
+
+void Mundial::imprimirReporteFinal() {
+
+    imprimirConsumoMemoria();
+
+    cout << "========================================" << endl;
+    cout << "   ESTADISTICAS DE EJECUCION (CPU)" << endl;
+    cout << "========================================" << endl;
+    cout << " Total de iteraciones procesadas en la Clase Mundial: " << totalIteraciones << endl;
+
+    cout << " Complejidad gestionada: ALTA (O(n^2) en sorteos y ordenamiento)" << endl;
+    cout << "========================================\n" << endl;
+}
+
+// ─── REPORTES FINALES DEL TORNEO ─────────────────────────────────────────────
+
+void Mundial::mostrarTop4() const {
+    if (faseFinal == nullptr) {
+        cout << "Error: La fase final aún no se ha jugado." << endl;
+        return;
+    }
+    Equipo** top4 = faseFinal->getTop4();
+
+    cout << "\n========================================\n";
+    cout << "   RANKING FINAL - TOP 4 DEL MUNDIAL\n";
+    cout << "========================================\n";
+
+    const char* medallas[] = {"🥇 1er Lugar (CAMPEON)   ",
+                              "🥈 2do Lugar (SUBCAMPEON)",
+                              "🥉 3er Lugar             ",
+                              "   4to Lugar             "};
+    for (int i = 0; i < 4; i++) {
+        if (top4[i] != nullptr) {
+            cout << medallas[i] << ": " << top4[i]->getNombre()
+            << " (Ranking FIFA #" << top4[i]->getRanking() << ")\n";
+        }
+    }
+    cout << "========================================\n";
+    delete[] top4;
+}
+
+Jugador* Mundial::obtenerMaximoGoleadorEquipo(Equipo* equipo) const {
+    if (equipo == nullptr || equipo->getCantidadJugadores() == 0) return nullptr;
+
+    Jugador* maximo = equipo->getJugador(0);
+    for (int i = 1; i < equipo->getCantidadJugadores(); i++) {
+        Jugador* j = equipo->getJugador(i);
+        if (j != nullptr && j->get_goles() > maximo->get_goles()) {
+            maximo = j;
+        }
+    }
+    return maximo;
+}
+
+Jugador** Mundial::obtenerTop3Goleadores() const {
+    // Arreglo de resultado: 3 punteros a los máximos goleadores globales
+    Jugador** top3 = new Jugador*[3];
+    top3[0] = top3[1] = top3[2] = nullptr;
+
+    // Recorremos todos los equipos y todos sus jugadores
+    for (int e = 0; e < listaMaestra.tamaño(); e++) {
+        Equipo* equipo = listaMaestra.consultar(e);
+        for (int j = 0; j < equipo->getCantidadJugadores(); j++) {
+            Jugador* jugador = equipo->getJugador(j);
+            if (jugador == nullptr) continue;
+
+            // Inserción en el top 3 (burbuja de inserción simple)
+            if (top3[0] == nullptr || jugador->get_goles() > top3[0]->get_goles()) {
+                top3[2] = top3[1];
+                top3[1] = top3[0];
+                top3[0] = jugador;
+            } else if (top3[1] == nullptr || jugador->get_goles() > top3[1]->get_goles()) {
+                top3[2] = top3[1];
+                top3[1] = jugador;
+            } else if (top3[2] == nullptr || jugador->get_goles() > top3[2]->get_goles()) {
+                top3[2] = jugador;
+            }
+        }
+    }
+    return top3;
+    // NOTA: El llamador debe hacer delete[] al arreglo (no a los jugadores)
+}
+
+Equipo* Mundial::obtenerEquipoMasGoles() const {
+    if (listaMaestra.esVacia()) return nullptr;
+
+    Equipo* mejor = listaMaestra.consultar(0);
+    for (int i = 1; i < listaMaestra.tamaño(); i++) {
+        Equipo* e = listaMaestra.consultar(i);
+        // Comparamos el promedio histórico actualizado con los resultados del torneo
+        if (e->getPromGolesFavor() > mejor->getPromGolesFavor()) {
+            mejor = e;
+        }
+    }
+    return mejor;
+}
+
+void Mundial::mostrarReportesFinales() const {
+    // ── 1. TOP 4 ──────────────────────────────────────────────────────────────
+    mostrarTop4();
+
+    // ── 2. MÁXIMO GOLEADOR DEL CAMPEÓN ───────────────────────────────────────
+    cout << "\n========================================\n";
+    cout << "   MAXIMO GOLEADOR DEL EQUIPO CAMPEON\n";
+    cout << "========================================\n";
+    if (faseFinal != nullptr) {
+        Equipo* campeon = faseFinal->getCampeon();
+        if (campeon != nullptr) {
+            Jugador* goleador = obtenerMaximoGoleadorEquipo(campeon);
+            if (goleador != nullptr) {
+                cout << "  Equipo: " << campeon->getNombre() << "\n";
+                cout << "  Jugador: " << goleador->get_nombre() << " "
+                     << goleador->get_apellido()
+                     << " | Goles en el torneo: " << goleador->get_goles() << "\n";
+            } else {
+                cout << "  Sin datos de goleadores.\n";
+            }
+        }
+    }
+    cout << "========================================\n";
+
+
+    // ── 3. TOP 3 GOLEADORES GLOBALES ─────────────────────────────────────────
+    cout << "\n========================================\n";
+    cout << "   TOP 3 GOLEADORES DE LA COPA MUNDIAL\n";
+    cout << "========================================\n";
+    Jugador** top3 = obtenerTop3Goleadores();
+    const char* posiciones[] = {"1ro", "2do", "3ro"};
+    for (int i = 0; i < 3; i++) {
+        if (top3[i] != nullptr) {
+            cout << "  " << posiciones[i] << ": " << top3[i]->get_nombre()
+            << " " << top3[i]->get_apellido()
+            << " | Goles: " << top3[i]->get_goles() << "\n";
+        }
+    }
+    delete[] top3;
+    cout << "========================================\n";
+
+    // ── 4. EQUIPO CON MÁS GOLES HISTÓRICOS ───────────────────────────────────
+    cout << "\n========================================\n";
+    cout << "   EQUIPO CON MAS GOLES HISTORICOS\n";
+    cout << "   (Promedios actualizados con el torneo)\n";
+    cout << "========================================\n";
+    Equipo* masGoles = obtenerEquipoMasGoles();
+    if (masGoles != nullptr) {
+        cout << "  Equipo: " << masGoles->getNombre() << "\n";
+        cout << "  Goles a Favor (historico+torneo): "
+             << masGoles->getGolesFavorTorneo() << "\n";
+    }
+    cout << "========================================\n";
+
+    // ── 5. CONFEDERACIÓN DOMINANTE POR RONDA ─────────────────────────────────
+    if (faseFinal != nullptr) {
+        faseFinal->reporteConfederaciones();
+    }
 }
 
 Mundial::~Mundial() {

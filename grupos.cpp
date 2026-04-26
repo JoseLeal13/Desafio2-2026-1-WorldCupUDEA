@@ -1,6 +1,7 @@
 #include "grupos.h"
 #include "partido.h"
 #include <iostream>
+#include "mundial.h"
 
 using namespace std;
 
@@ -25,6 +26,8 @@ void Grupo::agregarEquipo(Equipo* e) {
 void Grupo::ordenarPorPuntos() {
     for (int i = 0; i < cantEquipos - 1; i++) {
         for (int j = 0; j < cantEquipos - i - 1; j++) {
+
+            Mundial::registrarIteracion();
 
             bool intercambiar = false;
             Equipo* e1 = equipos[j];
@@ -95,7 +98,6 @@ void Grupo::simularPartidosDelGrupo() {
     // Este ciclo hace que los 4 equipos del grupo jueguen entre sí
     for (int i = 0; i < 4; i++) {
         for (int j = i + 1; j < 4; j++) {
-
             // 1. Se crea el partido (usando los equipos del arreglo 'equipos')
             partido p(equipos[i], equipos[j]);
 
