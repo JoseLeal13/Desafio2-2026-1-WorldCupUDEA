@@ -27,6 +27,7 @@ public:
 
     // Lógica principal
     void cargarDesdeCSV(std::string ruta);
+    void cargarJugadoresDesdeCSV(std::string ruta);
     void prepararBombosYSorteo();
     void ejecutarFaseGrupos();
     void programarEncuentroEspecifico(int g, int i, int j, Fecha &cal);

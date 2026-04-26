@@ -20,7 +20,7 @@ void Mundial::cargarDesdeCSV(string ruta) {
     ifstream archivo(ruta);
 
     if (!archivo.is_open()) {
-        cout << "Error al abrir el archivo CSV: " << ruta << endl;
+        cout << "Error al abrir el archivo CSV de selecciones: " << ruta << endl;
         return;
     }
 
@@ -55,31 +55,75 @@ void Mundial::cargarDesdeCSV(string ruta) {
             float gf_hist = stof(gf_str);
             float gc_hist = stof(gc_str);
 
-            // Crear el equipo
+            // Crear el equipo (se inicia con cantidadJugadores = 0 y el arreglo de punteros en null)
             Equipo* nuevo = new Equipo(r, nombre, dt, fed, conf, gf_hist, gc_hist, contadorID);
 
-            // 4. Lógica de Jugadores: Generar 26 jugadores para este equipo
-            for(int i = 0; i < 26; i++) {
-                string nomJ = "Jugador" + to_string(i + 1);
-                string apeJ = nombre; // El apellido es el nombre del país
-
-                // Creamos el jugador (usando .c_str() porque tu constructor pide const char*)
-                Jugador* j = new Jugador(nomJ.c_str(), apeJ.c_str(), (unsigned short int)(i + 1));
-                nuevo->agregarJugador(j);
-            }
-
-            // 5. Agregar el equipo ya lleno de jugadores a la lista maestra
+            // 4. Agregar el equipo a la lista maestra
             listaMaestra.agregar(nuevo, listaMaestra.tamaño());
             contadorID++;
 
         } catch (...) {
-            // Si una línea falla (ej. datos no numéricos), saltamos a la siguiente
+            // Si una línea falla, saltamos a la siguiente
             continue;
         }
     }
 
     archivo.close();
-    cout << "-> Carga completa: " << listaMaestra.tamaño() << " equipos cargados correctamente." << endl;
+    cout << "-> Carga de Selecciones: " << listaMaestra.tamaño() << " equipos creados (esperando jugadores)." << endl;
+}
+
+void Mundial::cargarJugadoresDesdeCSV(string ruta) {
+    ifstream archivo(ruta);
+
+    if (!archivo.is_open()) {
+        cout << "Error al abrir el archivo de jugadores: " << ruta << endl;
+        return;
+    }
+
+    string linea;
+    // Saltar la cabecera: pais;nombre;apellido;numero_camiseta;...
+    getline(archivo, linea);
+
+    while (getline(archivo, linea)) {
+        if (linea.empty()) continue;
+
+        stringstream ss(linea);
+        string pais, nombre, apellido, dorsal_str;
+
+        // Solo extraemos los datos necesarios para el constructor de Jugador
+        // El formato es: pais;nombre;apellido;numero_camiseta;...
+        getline(ss, pais, ';');
+        getline(ss, nombre, ';');
+        getline(ss, apellido, ';');
+        getline(ss, dorsal_str, ';');
+
+        // 1. Buscar el equipo correspondiente en la listaMaestra
+        Equipo* equipoDestino = nullptr;
+        for (int i = 0; i < listaMaestra.tamaño(); i++) {
+            if (listaMaestra.consultar(i)->getNombre() == pais) {
+                equipoDestino = listaMaestra.consultar(i);
+                break;
+            }
+        }
+
+        // 2. Si encontramos el equipo, creamos al jugador y lo agregamos
+        if (equipoDestino != nullptr) {
+            try {
+                unsigned short int dorsal = (unsigned short int)stoi(dorsal_str);
+
+                // Creamos el jugador con tus parámetros de constructor
+                Jugador* nuevoJ = new Jugador(nombre.c_str(), apellido.c_str(), dorsal);
+
+                // Usamos tu método de la clase Equipo
+                equipoDestino->agregarJugador(nuevoJ);
+            } catch (...) {
+                continue; // Saltar si hay error de conversión en el dorsal
+            }
+        }
+    }
+
+    archivo.close();
+    cout << "-> Carga de jugadores reales finalizada." << endl;
 }
 
 void Mundial::prepararBombosYSorteo() {

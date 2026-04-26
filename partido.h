@@ -14,6 +14,11 @@ private:
     Jugador* titulares2[11];
     int goles1;
     int goles2;
+    // NUEVAS ESTADISTICAS AÑADIDAS
+    int faltas1, faltas2;
+    int amarillas1, amarillas2;
+    int rojas1, rojas2;
+    int posesion1, posesion2;
 
     // Métodos internos de simulación
     void seleccionar_titulares(Equipo* equipo, Jugador* titulares[11]);
@@ -21,10 +26,14 @@ private:
     void repartir_goles(Jugador* titulares[11], int goles_a_repartir);
     void repartir_tiempo(Jugador* titulares[11], bool hay_prorroga);
 
+    // NUEVOS METODOS DE LOGICA
+    void calcular_posesion();
+    void simular_faltas(Jugador* titulares[11], int& faltas_equipo);
+    void simular_tarjetas(int faltas_equipo, Jugador* titulares[11], int& amarillas_equipo, int& rojas_equipo);
+
 public:
     partido(Equipo* e1, Equipo* e2);
 
-    // Getters para que la clase Grupo pueda leer los resultados
     int get_goles_equipo1() const { return goles1; }
     int get_goles_equipo2() const { return goles2; }
     Equipo* get_equipo1() const { return equipo1; }

@@ -20,6 +20,8 @@ int main() {
     // Lee el CSV, asigna IDs correlativos y crea los objetos Equipo/Jugador
     udeaCup.cargarDesdeCSV("selecciones_clasificadas_mundial.csv");
     udeaCup.imprimirConsumoMemoria();
+    udeaCup.cargarJugadoresDesdeCSV("jugadores_mundial.csv");
+    udeaCup.imprimirConsumoMemoria();
 
     // ETAPA 2: Sorteo de Grupos
     // Organiza los bombos por ranking y reparte con restricciones geográficas
