@@ -37,12 +37,21 @@ int partido::simular_goles(Equipo* equipoA, Equipo* equipoB) {
     const double mu = 1.35;
     const double alpha = 0.6;
     const double beta = 0.4;
+    double lambda;
 
     double GFA = equipoA->getPromGolesFavor();
     double GCB = equipoB->getPromGolesContra();
 
-    double lambda = mu * pow(GFA / mu, alpha) * pow(GCB / mu, beta);
+    if(GFA == 0){
+        lambda = mu * pow(GCB / mu, beta);
 
+    }
+    if(GCB == 0){
+        lambda = mu * pow(GFA / mu, alpha);
+    }
+    else{
+        lambda = mu * pow(GFA / mu, alpha) * pow(GCB / mu, beta);
+    }
     int goles_esperados = (int)(lambda + 0.5);
     return (goles_esperados < 0) ? 0 : goles_esperados;
 }

@@ -48,10 +48,14 @@ int main() {
     udeaCup.avanzarAFaseEliminatoria();
     udeaCup.simularRondasFinales();
 
-    udeaCup.imprimirConsumoMemoria();
-
     cout << "\n=== SIMULACION DE FASE DE GRUPOS FINALIZADA ===" << endl;
     cout << "Todos los resultados y tablas han sido calculados." << endl;
+
+    udeaCup.mostrarReportesFinales();
+
+    udeaCup.imprimirReporteFinal();
+
+    cout << "progreso completado !!" << endl;
 
     return 0;
 }
