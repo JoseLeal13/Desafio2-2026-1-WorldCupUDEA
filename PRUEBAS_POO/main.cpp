@@ -5,6 +5,7 @@ using namespace std;
 
 // ─── UTILIDADES DE TEXTO ──────────────────────────────────────────────────────
 
+
 int largo_texto(const char* mi_texto) {
     int contador = 0;
     while (mi_texto[contador] != '\0') contador++;
@@ -91,24 +92,7 @@ int separar_por_punto_y_coma(const char* linea, char campos[][200]) {
     return numero_campo;
 }
 
-// Elimina el BOM (EF BB BF) del inicio de una línea si está presente
-// El BOM solo aparece en la primera línea del archivo, así que lo sacamos
-// una sola vez en lugar de chequearlo en cada llamada al parser
-void quitar_bom_si_hay(char* linea) {
-    if ((unsigned char)linea[0] == 0xEF &&
-        (unsigned char)linea[1] == 0xBB &&
-        (unsigned char)linea[2] == 0xBF) {
-        // desplazamos todo el contenido 3 posiciones hacia la izquierda
-        int i = 0;
-        while (linea[i + 3] != '\0') {
-            linea[i] = linea[i + 3];
-            i++;
-        }
-        linea[i] = '\0';
-    }
-}
-
-// ─── CLASE JUGADOR ────────────────────────────────────────────────────────────
+// --- CLASE JUGADOR ----------------------------------------------
 
 class jugador {
 private:
@@ -284,6 +268,10 @@ private:
     jugador* titulares2[11];
     int goles1;
     int goles2;
+    int faltas1, faltas2;
+    int amarillas1, amarillas2;
+    int rojas1, rojas2;
+    int posesion1, posesion2;
 
 public:
     //equipo 1 = e1, equipo 2 = e2
@@ -310,6 +298,16 @@ public:
         bool prorroga = (goles1 == goles2);
         repartir_tiempo(titulares1, prorroga);
         repartir_tiempo(titulares2, prorroga);
+        // 5. Posesión
+        calcular_posesion();
+
+        // 6. Faltas
+        simular_faltas(titulares1, faltas1);
+        simular_faltas(titulares2, faltas2);
+
+        // 7. Tarjetas
+        simular_tarjetas(faltas1, titulares1, amarillas1, rojas1);
+        simular_tarjetas(faltas2, titulares2, amarillas2, rojas2);
 
         mostrar();
     }
@@ -319,6 +317,7 @@ public:
         const double mu = 1.35;
         const double alpha = 0.6;
         const double beta = 0.4;
+
 
         // Obtener datos de los equipos
         double GFA = equipoA->get_goles_favor();
@@ -334,13 +333,14 @@ public:
             partidos = partidos_jugadosA;
         }
 
-        GFA = GFA / partidos;
-        GCB = GCB / partidos;
+        //GFA = GFA / partidos;
+        //GCB = GCB / partidos;
 
         //  Calcular lambda (goles esperados)
         double lambda = mu *
                         pow(GFA / mu, alpha) *
-                        pow(GCB / mu, beta);
+                        pow(GCB / mu, beta)
+            ;
         // El 0.5 para redondear el numero ej: 2.75 se tomaria 2 pero con esto se tomaria 3
         int goles_esperados = (int)(lambda + 0.5);
 
@@ -351,6 +351,72 @@ public:
 
         return goles_esperados;
 
+    }
+    void calcular_posesion() {
+        double peso1 = 1.0 / equipo1->get_ranking();
+        double peso2 = 1.0 / equipo2->get_ranking();
+        double total = peso1 + peso2;
+
+        double proporcion = peso1 / total;  // entre 0 y 1
+
+        // Comprimimos al rango [35, 65]
+        posesion1 = (int)(35 + proporcion * 30 + 0.5);
+        posesion2 = 100 - posesion1;
+    }
+
+    void simular_faltas(jugador* titulares[11], int& faltas_equipo) {
+        faltas_equipo = 0;
+        for (int i = 0; i < 11; i++) {
+            int dado = rand() % 10000;  // usamos 10000 para manejar decimales
+
+            // 1ra falta: 13%    → dado < 1300
+            // 2da falta: 2.75%  → dado < 275
+            // 3ra falta: 0.7%   → dado < 70
+            if (dado < 70) {
+                titulares[i]->cometer_falta();
+                titulares[i]->cometer_falta();
+                titulares[i]->cometer_falta();
+                faltas_equipo += 3;
+            } else if (dado < 275) {
+                titulares[i]->cometer_falta();
+                titulares[i]->cometer_falta();
+                faltas_equipo += 2;
+            } else if (dado < 1300) {
+                titulares[i]->cometer_falta();
+                faltas_equipo += 1;
+            }
+        }
+    }
+    void simular_tarjetas(int faltas_equipo, jugador* titulares[11],
+                          int& amarillas_equipo, int& rojas_equipo) {
+        amarillas_equipo = 0;
+        rojas_equipo     = 0;
+
+        for (int f = 0; f < faltas_equipo; f++) {
+            int dado = rand() % 10000;
+
+            // Roja (doble amarilla): 1.6% → dado < 160
+            if (dado < 160) {
+                rojas_equipo++;
+                amarillas_equipo++;  // la doble amarilla cuenta como amarilla también
+            }
+            // Amarilla simple: 6% → dado < 600
+            else if (dado < 600) {
+                amarillas_equipo++;
+            }
+        }
+
+        // Asignamos las amarillas a jugadores titulares aleatoriamente
+        for (int a = 0; a < amarillas_equipo; a++) {
+            int jugador_idx = rand() % 11;
+            titulares[jugador_idx]->recibir_amarilla();
+        }
+        // Las rojas no se asignan a nadie específico (solo simulación)
+        for(int m = 0; m < rojas_equipo; m++){
+            int jugador_idx = rand() % 11;
+            titulares[jugador_idx] -> recibir_roja();
+            titulares[jugador_idx] -> recibir_amarilla();
+        }
     }
     void seleccionar_titulares(seleccion* equipo, jugador* titulares[11]) {
         // Armo un arreglo con los 26 índices y hago Fisher-Yates shuffle
@@ -388,6 +454,7 @@ public:
         }
     }
 
+
     void repartir_tiempo(jugador* titulares[11], bool hay_prorroga) {
         int minutos = hay_prorroga ? 120 : 90;
         for (int i = 0; i < 11; i++) {
@@ -420,47 +487,299 @@ public:
         }
     }
 
-    // void simular_partido(){
-    //aqui reparto los goles entre cada uno de los jugadores y hago lo de las faltas y eso
-
     void mostrar() const {
         cout << equipo1->get_nombre_pais()
         << " vs "
         << equipo2->get_nombre_pais() << "\n";
-        cout << "Marcador: " << get_goles_equipo1() << " a "<< get_goles_equipo2() << endl;
+        cout << "Marcador:  " << goles1 << " - " << goles2 << "\n";
+        cout << "Posesion:  " << posesion1 << "% - " << posesion2 << "%\n";
+        cout << "Faltas:    " << faltas1   << " - " << faltas2   << "\n";
+        cout << "Amarillas: " << amarillas1 << " - " << amarillas2 << "\n";
+        cout << "Rojas:     " << rojas1    << " - " << rojas2    << "\n";
     }
     int get_goles_equipo1()            const { return goles1; }
     int get_goles_equipo2()            const { return goles2; }
+    seleccion* get_equipo1()           const { return equipo1;}
+    seleccion* get_equipo2()           const { return equipo2;}
 };
+
 // --- CLASE FASE --------------------------------------------------------------
-/*class fase {
-    private:
-    const unsigned int SELECCIONES_CLASIFICADAS = 32;
+class fase {
+private:
     seleccion* primeros[12];
     seleccion* segundos[12];
     seleccion* terceros[8];
 
-//deberia crear aca una lista de la clase partido (16)
-    public:
+    partido* dieciseisavos[16];
+    partido* octavos[8];
+    partido* cuartos[4];
+    partido* semifinales[2];
+    partido* tercer_puesto;
+    partido* final_mundial;
 
-    void organizar_emparejamiento(){
+    seleccion* ganadores_dieciseisavos[16];
+    seleccion* ganadores_octavos[8];
+    seleccion* ganadores_cuartos[4];
+    seleccion* ganadores_semis[2];
+    seleccion* perdedores_semis[2];
 
-        //Todos los cabezas de grupo, contra los terceros puestos clasificados.
-        // El resto de cabezas de grupo, con los 4 peores segundos puestos.
-        //El resto de segundos puestos se enfrentan entre sí.
-        //para los primeros contra los 3eros
-        for(unsigned int i = 0; i < 12; i++){
-            if(primeros[i].get_grupo() != terceros[i].get_grupo()){
+    seleccion* emparejamiento_dieciseisavos[16][2];
+    int cantidad_emparejamientos;
 
-            }
 
+    seleccion* obtener_ganador(partido* p) {
+        if (p->get_goles_equipo1() > p->get_goles_equipo2())
+            return p->get_equipo1();
+        if (p->get_goles_equipo2() > p->get_goles_equipo1())
+            return p->get_equipo2();
+
+        // EMPATE → penales (50/50 aleatorio)
+        cout << "  EMPATE! Se van a penales...\n";
+        if (rand() % 2 == 0) {
+            cout << "  " << p->get_equipo1()->get_nombre_pais() << " gana en penales!\n";
+            return p->get_equipo1();
+        } else {
+            cout << "  " << p->get_equipo2()->get_nombre_pais() << " gana en penales!\n";
+            return p->get_equipo2();
         }
-
-
     }
 
+    seleccion* obtener_perdedor(partido* p) {
+        if (p->get_goles_equipo1() < p->get_goles_equipo2())
+            return p->get_equipo1();
+        return p->get_equipo2();
+    }
+
+    bool diferente_grupo(seleccion* a, seleccion* b) {
+        return a->get_grupo() != b->get_grupo();
+    }
+
+    void mostrar_clasificados(seleccion* ganadores[], int cantidad, const char* titulo) {
+        cout << "\n===== CLASIFICADOS A " << titulo << " =====\n";
+        for (int i = 0; i < cantidad; i++)
+            cout << "  " << (i+1) << ". " << ganadores[i]->get_nombre_pais() << "\n";
+    }
+
+public:
+    fase(seleccion* p[12], seleccion* s[12], seleccion* t[8]) {
+        for (int i = 0; i < 12; i++) primeros[i] = p[i];
+        for (int i = 0; i < 12; i++) segundos[i] = s[i];
+        for (int i = 0;  i < 8; i++) terceros[i] = t[i];
+
+        for (int i = 0; i < 16; i++) { dieciseisavos[i] = nullptr; ganadores_dieciseisavos[i] = nullptr; }
+        for (int i = 0; i <  8; i++) { octavos[i]       = nullptr; ganadores_octavos[i]       = nullptr; }
+        for (int i = 0; i <  4; i++) { cuartos[i]       = nullptr; ganadores_cuartos[i]       = nullptr; }
+        for (int i = 0; i <  2; i++) { semifinales[i]   = nullptr; ganadores_semis[i]         = nullptr; perdedores_semis[i] = nullptr; }
+        tercer_puesto = nullptr;
+        final_mundial = nullptr;
+        cantidad_emparejamientos = 0;
+    }
+
+    ~fase() {
+        for (int i = 0; i < 16; i++) delete dieciseisavos[i];
+        for (int i = 0; i <  8; i++) delete octavos[i];
+        for (int i = 0; i <  4; i++) delete cuartos[i];
+        for (int i = 0; i <  2; i++) delete semifinales[i];
+        delete tercer_puesto;
+        delete final_mundial;
+    }
+
+    // ── 16AVOS ───────────────────────────────────────────────────────────────
+    void organizar_dieciseisavos() {
+        cantidad_emparejamientos = 0;
+
+        // BLOQUE A: primeros[0..7] vs terceros[0..7]
+        bool tercero_usado[8] = {false};
+        for (int i = 0; i < 8; i++) {
+            bool emparejado = false;
+            for (int j = 0; j < 8 && !emparejado; j++) {
+                if (!tercero_usado[j] && diferente_grupo(primeros[i], terceros[j])) {
+                    emparejamiento_dieciseisavos[cantidad_emparejamientos][0] = primeros[i];
+                    emparejamiento_dieciseisavos[cantidad_emparejamientos][1] = terceros[j];
+                    cantidad_emparejamientos++;
+                    tercero_usado[j] = true;
+                    emparejado = true;
+                }
+            }
+            // fallback sin restriccion de grupo
+            for (int j = 0; j < 8 && !emparejado; j++) {
+                if (!tercero_usado[j]) {
+                    emparejamiento_dieciseisavos[cantidad_emparejamientos][0] = primeros[i];
+                    emparejamiento_dieciseisavos[cantidad_emparejamientos][1] = terceros[j];
+                    cantidad_emparejamientos++;
+                    tercero_usado[j] = true;
+                    emparejado = true;
+                }
+            }
+        }
+
+        // BLOQUE B: primeros[8..11] vs segundos[8..11]
+        bool segundo_peor_usado[4] = {false};
+        for (int i = 8; i < 12; i++) {
+            bool emparejado = false;
+            for (int j = 0; j < 4 && !emparejado; j++) {
+                if (!segundo_peor_usado[j] && diferente_grupo(primeros[i], segundos[8+j])) {
+                    emparejamiento_dieciseisavos[cantidad_emparejamientos][0] = primeros[i];
+                    emparejamiento_dieciseisavos[cantidad_emparejamientos][1] = segundos[8+j];
+                    cantidad_emparejamientos++;
+                    segundo_peor_usado[j] = true;
+                    emparejado = true;
+                }
+            }
+            for (int j = 0; j < 4 && !emparejado; j++) {
+                if (!segundo_peor_usado[j]) {
+                    emparejamiento_dieciseisavos[cantidad_emparejamientos][0] = primeros[i];
+                    emparejamiento_dieciseisavos[cantidad_emparejamientos][1] = segundos[8+j];
+                    cantidad_emparejamientos++;
+                    segundo_peor_usado[j] = true;
+                    emparejado = true;
+                }
+            }
+        }
+
+        // BLOQUE C: segundos[0..7] entre si
+        bool segundo_top_usado[8] = {false};
+        for (int i = 0; i < 8; i++) {
+            if (segundo_top_usado[i]) continue;
+            bool emparejado = false;
+            for (int j = i+1; j < 8 && !emparejado; j++) {
+                if (!segundo_top_usado[j] && diferente_grupo(segundos[i], segundos[j])) {
+                    emparejamiento_dieciseisavos[cantidad_emparejamientos][0] = segundos[i];
+                    emparejamiento_dieciseisavos[cantidad_emparejamientos][1] = segundos[j];
+                    cantidad_emparejamientos++;
+                    segundo_top_usado[i] = true;
+                    segundo_top_usado[j] = true;
+                    emparejado = true;
+                }
+            }
+            for (int j = i+1; j < 8 && !emparejado; j++) {
+                if (!segundo_top_usado[j]) {
+                    emparejamiento_dieciseisavos[cantidad_emparejamientos][0] = segundos[i];
+                    emparejamiento_dieciseisavos[cantidad_emparejamientos][1] = segundos[j];
+                    cantidad_emparejamientos++;
+                    segundo_top_usado[i] = true;
+                    segundo_top_usado[j] = true;
+                    emparejado = true;
+                }
+            }
+        }
+
+        // Mostrar enfrentamientos
+        cout << "\n========== 16AVOS DE FINAL ==========\n";
+        cout << "Enfrentamientos:\n";
+        for (int i = 0; i < cantidad_emparejamientos; i++)
+            cout << "  Partido " << (i+1) << ": "
+                 << emparejamiento_dieciseisavos[i][0]->get_nombre_pais()
+                 << " vs "
+                 << emparejamiento_dieciseisavos[i][1]->get_nombre_pais() << "\n";
+    }
+
+    void jugar_dieciseisavos() {
+        cout << "\n--- Jugando 16avos ---\n";
+        for (int i = 0; i < cantidad_emparejamientos; i++) {
+            dieciseisavos[i] = new partido(emparejamiento_dieciseisavos[i][0],
+                                           emparejamiento_dieciseisavos[i][1]);
+            ganadores_dieciseisavos[i] = obtener_ganador(dieciseisavos[i]);
+        }
+        mostrar_clasificados(ganadores_dieciseisavos, 16, "OCTAVOS");
+    }
+
+    // ── OCTAVOS ──────────────────────────────────────────────────────────────
+    void organizar_octavos() {
+        cout << "\n========== OCTAVOS DE FINAL ==========\n";
+        cout << "Enfrentamientos:\n";
+        for (int i = 0; i < 16; i += 2)
+            cout << "  Partido " << (i/2+1) << ": "
+                 << ganadores_dieciseisavos[i]->get_nombre_pais()
+                 << " vs "
+                 << ganadores_dieciseisavos[i+1]->get_nombre_pais() << "\n";
+    }
+
+    void jugar_octavos() {
+        cout << "\n--- Jugando Octavos ---\n";
+        for (int i = 0; i < 8; i++) {
+            octavos[i] = new partido(ganadores_dieciseisavos[i*2],
+                                     ganadores_dieciseisavos[i*2+1]);
+            ganadores_octavos[i] = obtener_ganador(octavos[i]);
+        }
+        mostrar_clasificados(ganadores_octavos, 8, "CUARTOS");
+    }
+
+    // ── CUARTOS ──────────────────────────────────────────────────────────────
+    void organizar_cuartos() {
+        cout << "\n========== CUARTOS DE FINAL ==========\n";
+        cout << "Enfrentamientos:\n";
+        for (int i = 0; i < 8; i += 2)
+            cout << "  Partido " << (i/2+1) << ": "
+                 << ganadores_octavos[i]->get_nombre_pais()
+                 << " vs "
+                 << ganadores_octavos[i+1]->get_nombre_pais() << "\n";
+    }
+
+    void jugar_cuartos() {
+        cout << "\n--- Jugando Cuartos ---\n";
+        for (int i = 0; i < 4; i++) {
+            cuartos[i] = new partido(ganadores_octavos[i*2],
+                                     ganadores_octavos[i*2+1]);
+            ganadores_cuartos[i] = obtener_ganador(cuartos[i]);
+        }
+        mostrar_clasificados(ganadores_cuartos, 4, "SEMIFINALES");
+    }
+
+    // ── SEMIFINALES ──────────────────────────────────────────────────────────
+    void organizar_semifinales() {
+        cout << "\n========== SEMIFINALES ==========\n";
+        cout << "Enfrentamientos:\n";
+        for (int i = 0; i < 4; i += 2)
+            cout << "  Partido " << (i/2+1) << ": "
+                 << ganadores_cuartos[i]->get_nombre_pais()
+                 << " vs "
+                 << ganadores_cuartos[i+1]->get_nombre_pais() << "\n";
+    }
+
+    void jugar_semifinales() {
+        cout << "\n--- Jugando Semifinales ---\n";
+        for (int i = 0; i < 2; i++) {
+            semifinales[i] = new partido(ganadores_cuartos[i*2],
+                                         ganadores_cuartos[i*2+1]);
+            ganadores_semis[i]  = obtener_ganador(semifinales[i]);
+            perdedores_semis[i] = obtener_perdedor(semifinales[i]);
+        }
+        cout << "\nFinales:\n";
+        cout << "  3er y 4to puesto: "
+             << perdedores_semis[0]->get_nombre_pais()
+             << " vs "
+             << perdedores_semis[1]->get_nombre_pais() << "\n";
+        cout << "  Final: "
+             << ganadores_semis[0]->get_nombre_pais()
+             << " vs "
+             << ganadores_semis[1]->get_nombre_pais() << "\n";
+    }
+
+    // ── 3ER Y 4TO PUESTO ─────────────────────────────────────────────────────
+    void jugar_tercer_puesto() {
+        cout << "\n========== 3ER Y 4TO PUESTO ==========\n";
+        tercer_puesto = new partido(perdedores_semis[0], perdedores_semis[1]);
+        seleccion* tercero = obtener_ganador(tercer_puesto);
+        seleccion* cuarto  = obtener_perdedor(tercer_puesto);
+        cout << "  3er lugar: " << tercero->get_nombre_pais() << "\n";
+        cout << "  4to lugar: " << cuarto->get_nombre_pais()  << "\n";
+    }
+
+    // ── FINAL ────────────────────────────────────────────────────────────────
+    void jugar_final() {
+        cout << "\n========== GRAN FINAL ==========\n";
+        cout << ganadores_semis[0]->get_nombre_pais()
+             << " vs "
+             << ganadores_semis[1]->get_nombre_pais() << "\n";
+        final_mundial = new partido(ganadores_semis[0], ganadores_semis[1]);
+        seleccion* campeon = obtener_ganador(final_mundial);
+        cout << "\n🏆 CAMPEON DEL MUNDO: " << campeon->get_nombre_pais() << "\n";
+
+        campeon -> mostrar_info();
+    }
 };
-*/
+
 // ─── CLASE MUNDIAL ───────────────────────────────────────────────────────────
 
 class mundial {
@@ -497,9 +816,6 @@ public:
         while (archivo.getline(linea, 500)) {
             numero_linea++;
 
-            // La primera línea puede traer BOM de Excel, lo quitamos una sola vez
-            if (numero_linea == 1) quitar_bom_si_hay(linea);
-
             // Saltamos las 2 cabeceras: título del archivo y nombres de columnas
             if (numero_linea <= 2) continue;
 
@@ -509,13 +825,6 @@ public:
             // Separamos los campos por punto y coma
             char campos[10][200];
             int cantidad_campos = separar_por_punto_y_coma(linea, campos);
-
-            // Si faltan campos la línea está rota, la saltamos con aviso
-            if (cantidad_campos < 10) {
-                cout << "Linea " << numero_linea << " tiene solo "
-                     << cantidad_campos << " campos, se omite\n";
-                continue;
-            }
 
             // Buffer de texto: pais, entrenador, federacion, confederacion
             const char* datos_texto[4] = {
@@ -570,30 +879,38 @@ int main() {
     // Muestro todas las selecciones
     //copa_del_mundo.mostrar_todas();
 
-    /* Muestro Colombia específicamente — índice 12 = fila 15 del CSV (2 cabeceras + 13 datos)
-    cout << "\n========================================\n";
-    cout << "         DETALLE DE COLOMBIA\n";
-    cout << "========================================\n";
-    seleccion* col = copa_del_mundo.get_seleccion(12);
-    seleccion* fra = copa_del_mundo.get_seleccion(1);
-    if (col != nullptr) {
-        col->mostrar_info();
-        fra ->mostrar_info();
-    } else {
-        cout << "No se encontro Colombia en el indice 12.\n";
-        cout << "Solo hay " << copa_del_mundo.get_cantidad_selecciones() << " selecciones cargadas.\n";
-        cout << "Revisa que la ruta del archivo CSV sea correcta.\n";
-    }
-    */
+    seleccion* primeros[12];
+    seleccion* segundos[12];
+    seleccion* terceros[8];
 
-    seleccion* col = copa_del_mundo.get_seleccion(12);
-    seleccion* fra = copa_del_mundo.get_seleccion(1);
-    col -> mostrar_info();
-    fra -> mostrar_info();
-    cout << "--------------------------------------------"<< endl;
+    // 12 primeros (índices 0 al 11)
+    for (int i = 0; i < 12; i++)
+        primeros[i] = copa_del_mundo.get_seleccion(i);
 
+    // 12 segundos (índices 12 al 23)
+    for (int i = 0; i < 12; i++)
+        segundos[i] = copa_del_mundo.get_seleccion(12 + i);
 
-    partido p1(col,fra);
-    p1.mostrar_titulares();
+    // 8 terceros (índices 24 al 31)
+    for (int i = 0; i < 8; i++)
+        terceros[i] = copa_del_mundo.get_seleccion(24 + i);
+    fase eliminatorias(primeros, segundos, terceros);
+
+    eliminatorias.organizar_dieciseisavos();
+    eliminatorias.jugar_dieciseisavos();
+
+    eliminatorias.organizar_octavos();
+    eliminatorias.jugar_octavos();
+
+    eliminatorias.organizar_cuartos();
+    eliminatorias.jugar_cuartos();
+
+    eliminatorias.organizar_semifinales();
+    eliminatorias.jugar_semifinales();
+
+    eliminatorias.jugar_tercer_puesto();
+    eliminatorias.jugar_final();
+
     return 0;
 }
+
