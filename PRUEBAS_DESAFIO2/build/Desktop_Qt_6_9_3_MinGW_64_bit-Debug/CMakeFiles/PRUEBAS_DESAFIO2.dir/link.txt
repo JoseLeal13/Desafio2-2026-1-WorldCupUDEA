@@ -1,0 +1,3 @@
+C:\Qt\Tools\CMake_64\bin\cmake.exe -E rm -f CMakeFiles\PRUEBAS_DESAFIO2.dir/objects.a
+C:\Qt\Tools\mingw1310_64\bin\ar.exe qc CMakeFiles\PRUEBAS_DESAFIO2.dir/objects.a @CMakeFiles\PRUEBAS_DESAFIO2.dir\objects1.rsp
+C:\Qt\Tools\mingw1310_64\bin\g++.exe -g -Wl,--whole-archive CMakeFiles\PRUEBAS_DESAFIO2.dir/objects.a -Wl,--no-whole-archive -o PRUEBAS_DESAFIO2.exe -Wl,--out-implib,libPRUEBAS_DESAFIO2.dll.a -Wl,--major-image-version,0,--minor-image-version,0 @CMakeFiles\PRUEBAS_DESAFIO2.dir\linkLibs.rsp
