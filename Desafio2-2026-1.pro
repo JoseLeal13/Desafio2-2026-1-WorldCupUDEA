@@ -5,6 +5,7 @@ CONFIG -= qt
 
 SOURCES += \
         equipo.cpp \
+        fase.cpp \
         fecha.cpp \
         grupos.cpp \
         jugador.cpp \
@@ -15,6 +16,7 @@ SOURCES += \
 HEADERS += \
     Lista.h \
     equipo.h \
+    fase.h \
     fecha.h \
     grupos.h \
     jugador.h \

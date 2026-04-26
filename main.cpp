@@ -39,12 +39,14 @@ int main() {
     // Reporte de memoria tras la simulación masiva de 72 partidos
     udeaCup.imprimirConsumoMemoria();
 
-    /* ETAPA 4: Transición (COMENTADO POR AHORA)
-       Cuando implementes Fases, solo tendrás que descomentar esto:
+    // ETAPA 4: Transición
+    // Cuando se implemente Fases
 
-       cout << "\n> Clasificando equipos a Fase Final..." << endl;
-       udeaCup.avanzarAFaseEliminatoria();
-    */
+    cout << "\n> Clasificando equipos a Fase Final..." << endl;
+    udeaCup.avanzarAFaseEliminatoria();
+    udeaCup.simularRondasFinales();
+
+    udeaCup.imprimirConsumoMemoria();
 
     cout << "\n=== SIMULACION DE FASE DE GRUPOS FINALIZADA ===" << endl;
     cout << "Todos los resultados y tablas han sido calculados." << endl;

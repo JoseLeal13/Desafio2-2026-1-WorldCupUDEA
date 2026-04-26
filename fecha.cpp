@@ -65,3 +65,8 @@ unsigned short int Fecha::getDiaActual() const {
 unsigned short int Fecha::getPartidosHoy() const {
     return partidosHoy;
 }
+
+long Fecha::calcularMemoria() const {
+    // sizeof(short) es 2 bytes. 60 * 2 = 120 bytes.
+    return sizeof(Fecha) + (sizeof(short) * 60);
+}

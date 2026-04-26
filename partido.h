@@ -27,9 +27,13 @@ public:
     // Getters para que la clase Grupo pueda leer los resultados
     int get_goles_equipo1() const { return goles1; }
     int get_goles_equipo2() const { return goles2; }
+    Equipo* get_equipo1() const { return equipo1; }
+    Equipo* get_equipo2() const { return equipo2; }
 
     void mostrar() const;
     void mostrar_titulares() const;
+
+    long calcularMemoria() const;
 };
 
 #endif

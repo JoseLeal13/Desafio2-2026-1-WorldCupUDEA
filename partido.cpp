@@ -77,3 +77,10 @@ void partido::mostrar() const {
     cout << equipo1->getNombre() << " [" << goles1 << "] vs ["
          << goles2 << "] " << equipo2->getNombre() << endl;
 }
+
+long partido::calcularMemoria() const {
+    long memoria = sizeof(partido);
+    // Nota: No sumamos el tamaño de los Equipos o Jugadores porque
+    // la clase 'partido' NO es dueña de ellos, solo los referencia.
+    return memoria;
+}

@@ -36,6 +36,8 @@ public:
     // Getters
     unsigned short int getDiaActual() const;
     unsigned short int getPartidosHoy() const;
+
+    long calcularMemoria() const;
 };
 
 #endif

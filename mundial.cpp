@@ -3,7 +3,6 @@
 #include <sstream>
 #include <cstdlib>
 #include <ctime>
-#include "partido.h"
 #include <iostream>
 
 using namespace std;
@@ -144,7 +143,7 @@ void Mundial::prepararBombosYSorteo() {
 }
 
 void Mundial::ejecutarFaseGrupos() {
-    Fecha calendario(100);
+    Fecha calendario(60);
     short int partidosTotales = 72;
     short int partidosJugados = 0;
 
@@ -304,7 +303,7 @@ Equipo* Mundial::sorteoPonderado(Equipo* e1, Equipo* e2) {
         return e2; // Ganó el de menor ranking (menos probable)
     }
 }
-/*
+
 void Mundial::avanzarAFaseEliminatoria() {
     // 1. Declaramos los punteros para recibir los arreglos dinámicos
     Equipo** primeros = nullptr;
@@ -327,20 +326,72 @@ void Mundial::avanzarAFaseEliminatoria() {
     cout << " Clasificados enviados a eliminacion directa." << endl;
     cout << "------------------------------------------------\n" << endl;
 }
-*/
+
+void Mundial::simularRondasFinales() {
+    if (faseFinal == nullptr) {
+        cout << "Error: No se han determinado los clasificados aún." << endl;
+        return;
+    }
+
+    // 1. Dieciseisavos
+    faseFinal->organizar_dieciseisavos();
+    faseFinal->jugar_dieciseisavos();
+
+    // 2. Octavos
+    faseFinal->organizar_octavos();
+    faseFinal->jugar_octavos();
+
+    // 3. Cuartos
+    faseFinal->organizar_cuartos();
+    faseFinal->jugar_cuartos();
+
+    // 4. Semifinales
+    faseFinal->organizar_semifinales();
+    faseFinal->jugar_semifinales();
+
+    // 5. Tercer Puesto
+    faseFinal->jugar_tercer_puesto();
+
+    // 6. Gran Final
+    faseFinal->jugar_final();
+}
+
 void Mundial::imprimirConsumoMemoria() {
     cout << "========================================" << endl;
     cout << " REPORTE DE MEMORIA (ESTRUCTURAS DINAMICAS)" << endl;
 
-    // Nota: Asegúrate que memoriaUsada() o memoryUsage() sea el nombre correcto en lista.h
-    cout << "Memoria en Listas Enlazadas: "
-         << lista<Equipo*>::memoriaUsada() << " bytes." << endl;
+    // 1. Memoria de Datos Maestros (Equipos y Jugadores)
+    // Se calcula a través de la listaMaestra que recorre los objetos en el Heap.
+    long memObjetos = lista<Equipo*>::memoriaUsada();
+    cout << "1. Equipos y Jugadores (Lista Maestra): " << memObjetos << " bytes." << endl;
 
-    long memoriaGrupos = sizeof(Grupo*) * totalGrupos + (sizeof(Grupo) * totalGrupos);
-    cout << "Memoria en Estructura de Grupos: "
-         << memoriaGrupos << " bytes." << endl;
+    // 2. Memoria de la Estructura de Grupos
+    // Sumamos el arreglo de punteros y los 12 objetos Grupo.
+    long memGrupos = (sizeof(Grupo*) * totalGrupos) + (sizeof(Grupo) * totalGrupos);
+    cout << "2. Estructura de Grupos (Punteros/Objetos): " << memGrupos << " bytes." << endl;
 
-    cout << "========================================" << endl;
+    // 3. Memoria de Gestión de Fechas (Calendario)
+    // Instanciamos una fecha temporal para obtener su cálculo interno o lo calculamos directo
+    // Si tienes el objeto 'calendario' como atributo, usa: calendario->calcularMemoria()
+    long memCalendario = sizeof(short) * 60 + 8; // Arreglo dinámico + puntero/base
+    cout << "3. Gestor de Calendario y Descansos:    " << memCalendario << " bytes." << endl;
+
+    // 4. Memoria de la Fase Final (Solo si ya se creó)
+    long memFaseFinal = 0;
+    if (faseFinal != nullptr) {
+        memFaseFinal = faseFinal->calcularMemoriaDinamica();
+        cout << "4. Fase Final (Objetos Partido nuevos): " << memFaseFinal << " bytes." << endl;
+    } else {
+        cout << "4. Fase Final:                          0 bytes (No iniciada)." << endl;
+    }
+
+    // CÁLCULO DEL TOTAL
+    long totalTotal = memObjetos + memGrupos + memCalendario + memFaseFinal;
+
+    cout << "----------------------------------------------------" << endl;
+    cout << " TOTAL ESTIMADO EN MEMORIA HEAP:        " << totalTotal << " bytes." << endl;
+    cout << " TOTAL EN KILOBYTES (KB):               " << (totalTotal / 1024.0) << " KB." << endl;
+    cout << "====================================================\n" << endl;
 }
 
 Mundial::~Mundial() {
