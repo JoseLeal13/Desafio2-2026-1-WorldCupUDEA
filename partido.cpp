@@ -140,8 +140,14 @@ void partido::repartir_tiempo(Jugador* titulares[11], bool hay_prorroga) {
 }
 
 void partido::mostrar() const {
+
+    cout << "Sede: nombreSede" << endl;
+    cout << "Arbitros: codArbritro1, codArbritro2, codArbritro3" << endl;
+    cout << "Hora: 00:00" << endl;
+
     cout << equipo1->getNombre() << " [" << goles1 << "] vs ["
          << goles2 << "] " << equipo2->getNombre() << endl;
+
     cout << "Posesion:  " << posesion1 << "% - " << posesion2 << "%" << endl;
     cout << "Faltas:    " << faltas1 << " - " << faltas2 << endl;
     cout << "Amarillas: " << amarillas1 << " - " << amarillas2 << endl;
